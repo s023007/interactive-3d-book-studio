@@ -28,27 +28,116 @@ function guide(text){
  lastMsg=text;
  $('guideLine').textContent=text;
 }
+const voiceConfig={mode:'device',uri:'',pace:.95,endpoint:'',code:''};
+let currentClip=null,clipUrl=null,voiceController=null;
+function refreshVoices(){
+ const select=$('nativeVoice');
+ if(!select)return;
+ const voices=('speechSynthesis' in window)?window.speechSynthesis.getVoices():[];
+ const current=voiceConfig.uri;
+ const arabic=voices.filter(v=>v.lang&&v.lang.toLowerCase().startsWith('ar'));
+ select.replaceChildren();
+ const defaultOpt=document.createElement('option');defaultOpt.value='';defaultOpt.textContent='تلقائي — أفضل صوت عربي متاح';select.appendChild(defaultOpt);
+ arabic.forEach(v=>{const opt=document.createElement('option');opt.value=v.voiceURI;opt.textContent=v.name+' ('+v.lang+')';select.appendChild(opt)});
+ select.value=arabic.some(v=>v.voiceURI===current)?current:'';
+}
+function chooseArabicVoice(){
+ if(!('speechSynthesis' in window))return null;
+ const voices=window.speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.toLowerCase().startsWith('ar'));
+ return voices.find(v=>v.voiceURI===voiceConfig.uri)||voices.sort((a,b)=>{
+  const rank=v=>(/Google|Microsoft|Neural|Natural|Enhanced|Premium|Samsung/i.test(v.name)?10:0)+(v.localService?1:3);
+  return rank(b)-rank(a);
+ })[0]||null;
+}
 function cancelVoice(){
  voiceTurn++;
  state.talking=false;
- try { if('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch{}
+ try{if('speechSynthesis' in window)window.speechSynthesis.cancel()}catch{}
+ if(voiceController){voiceController.abort();voiceController=null}
+ if(currentClip){currentClip.pause();currentClip.src='';currentClip=null}
+ if(clipUrl){URL.revokeObjectURL(clipUrl);clipUrl=null}
 }
-function speak(text) {
- guide(text);
- cancelVoice();
- if(state.muted || !('speechSynthesis' in window))return;
- const key=voiceTurn;
- try {
+function deviceTalk(text,key){
+ if(state.muted||!('speechSynthesis' in window))return;
+ try{
   const utter=new SpeechSynthesisUtterance(text);
-  utter.lang='ar-OM';utter.rate=.91;utter.pitch=1.09;utter.volume=1;
-  const voices=window.speechSynthesis.getVoices();
-  const arabic=voices.find(v=>v.lang?.toLowerCase().startsWith('ar'));
-  if(arabic)utter.voice=arabic;
+  const voice=chooseArabicVoice();
+  utter.lang=voice?.lang||'ar-SA';
+  utter.voice=voice;
+  utter.rate=voiceConfig.pace;
+  utter.pitch=1.01;
+  utter.volume=1;
   utter.onstart=()=>{if(key===voiceTurn)state.talking=true};
   utter.onend=()=>{if(key===voiceTurn)state.talking=false};
   utter.onerror=()=>{if(key===voiceTurn)state.talking=false};
   window.speechSynthesis.speak(utter);
- }catch(err){console.warn('Speech unavailable',err);state.talking=false}
+ }catch(e){console.warn('Device voice failed',e);state.talking=false}
+}
+async function studioTalk(text,key){
+ let endpoint;
+ try {
+  endpoint=new URL(voiceConfig.endpoint);
+  if(endpoint.protocol!=='https:'||!voiceConfig.code)throw Error('not configured');
+ }catch{
+  $('voiceStatus').textContent='خدمة الاستوديو غير مفعلة. استخدمت صوت الهاتف مؤقتًا.';
+  deviceTalk(text,key);return;
+ }
+ const controller=new AbortController();voiceController=controller;
+ try{
+  const res=await fetch(endpoint.href,{method:'POST',headers:{'Content-Type':'application/json','X-Warraq-Code':voiceConfig.code},body:JSON.stringify({text:text.slice(0,700),speaker:state.pack?.id==='limits'?'mentor':'luma'}),signal:controller.signal});
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  const audio=await res.blob();
+  if(!audio.type.startsWith('audio/'))throw new Error('unsupported audio');
+  if(key!==voiceTurn)return;
+  clipUrl=URL.createObjectURL(audio);
+  const media=new Audio(clipUrl);currentClip=media;
+  media.onplay=()=>{if(key===voiceTurn)state.talking=true};
+  media.onended=()=>{if(key===voiceTurn)state.talking=false};
+  media.onerror=()=>{if(key===voiceTurn)state.talking=false};
+  await media.play();
+ }catch(err){
+  if(controller.signal.aborted)return;
+  console.warn('Studio narration unavailable',err);
+  if(key===voiceTurn){
+   $('voiceStatus').textContent='تعذّر تشغيل الصوت الاحترافي، تم الرجوع لصوت الجهاز.';
+   deviceTalk(text,key);
+  }
+ }finally{if(voiceController===controller)voiceController=null}
+}
+function speak(text){
+ guide(text);
+ cancelVoice();
+ if(state.muted)return;
+ const key=voiceTurn;
+ if(voiceConfig.mode==='studio')void studioTalk(text,key);
+ else deviceTalk(text,key);
+}
+function readVoiceSettings(){
+ try{const saved=JSON.parse(localStorage.getItem('warraq-game-voice-v1')||'{}');
+  voiceConfig.mode=saved.mode==='studio'?'studio':'device';
+  voiceConfig.uri=typeof saved.uri==='string'?saved.uri:'';
+  voiceConfig.pace=Number(saved.pace)||.95;
+  voiceConfig.endpoint=typeof saved.endpoint==='string'?saved.endpoint:'';
+ }catch{}
+ $('voiceMode').value=voiceConfig.mode;
+ $('voicePace').value=String(voiceConfig.pace);
+ $('voicePaceValue').textContent=ar(voiceConfig.pace.toFixed(2));
+ $('voiceEndpoint').value=voiceConfig.endpoint;
+ refreshVoices();updateModeFields();
+}
+function updateModeFields(){
+ const studio=$('voiceMode').value==='studio';
+ $('studioOptions').hidden=!studio;
+ $('nativeOptions').hidden=studio;
+}
+function saveVoiceSettings(){
+ voiceConfig.mode=$('voiceMode').value;
+ voiceConfig.uri=$('nativeVoice').value;
+ voiceConfig.pace=Number($('voicePace').value)||.95;
+ voiceConfig.endpoint=$('voiceEndpoint').value.trim();
+ voiceConfig.code=$('voiceCode').value.trim();
+ try{localStorage.setItem('warraq-game-voice-v1',JSON.stringify({mode:voiceConfig.mode,uri:voiceConfig.uri,pace:voiceConfig.pace,endpoint:voiceConfig.endpoint}))}catch{}
+ $('voiceStatus').textContent=voiceConfig.mode==='studio'&&!voiceConfig.code?'للتفعيل أدخل رمز خادم الصوت الخاص بك أولاً.':'تم حفظ إعدادات الصوت.';
 }
 function playNotes(type){
  if(state.muted)return;
@@ -207,6 +296,16 @@ $('repeat').onclick=()=>{
 };
 $('listen').onclick=()=>speak(lastMsg||'أهلًا بك في وادي النجوم.');
 $('mute').onclick=()=>setMuted(!state.muted);
+
+$('voiceSetup').onclick=()=>{$('voiceDialog').showModal();refreshVoices()};
+$('closeVoice').onclick=()=>$('voiceDialog').close();
+$('voiceMode').onchange=updateModeFields;
+$('voicePace').oninput=()=>{$('voicePaceValue').textContent=ar(Number($('voicePace').value).toFixed(2))};
+$('voiceTest').onclick=()=>{saveVoiceSettings();speak('مرحبًا يا أبطال! أنا لُمى. هيا نلعب ونتعلم الرياضيات معًا!')};
+$('saveVoice').onclick=()=>{saveVoiceSettings();$('voiceDialog').close()};
+readVoiceSettings();
+if('speechSynthesis' in window)window.speechSynthesis.onvoiceschanged=refreshVoices;
+
 window.addEventListener('pagehide',cancelVoice);
 
 // All 3D materials, characters, and worlds below are original procedural geometry.
