@@ -279,9 +279,9 @@ function finish(){
 }
 function resetToStart(){
  cancelVoice();state.pack=null;state.score=0;updateScore();show('startPanel');
- setWorld(pickPack());guide('أهلًا بك! أنا لُمى. اختر صفك، ولنبدأ اللعب معًا.');
+ setWorld(pickPack());if(stage)stage.setTheme('intro');guide('أهلًا بك! أنا لُمى. اختر صفك، ولنبدأ اللعب معًا.');
 }
-$('pack').onchange=()=>{const p=pickPack();setWorld(p);guide(p.welcome)};
+$('pack').onchange=()=>{const p=pickPack();setWorld(p);if(stage)stage.setTheme('intro');guide(p.welcome)};
 $('start').onclick=startGame;
 $('next').onclick=nextQuestion;
 $('again').onclick=startGame;
@@ -356,7 +356,7 @@ class World3D {
   const fill=new THREE.PointLight(0x7ef4e4,42,20);fill.position.set(3,3,3);scene.add(fill);
   this.group=new THREE.Group();scene.add(this.group);
   this.base=new THREE.Group();this.group.add(this.base);
-  this.makeTerrain();this.makeGuide();
+  this.makeTerrain();this.makeGuide();this.makeOcean();this.makeLobby();this.makeSpace();
   this.resize();
   this.observer=new ResizeObserver(()=>this.resize());
   this.observer.observe(canvas);
@@ -448,19 +448,131 @@ class World3D {
   const gemstone=ball(g,.2,0,.93,.67,new THREE.MeshStandardMaterial({color:0xf9e7a2,emissive:0xedaf47,emissiveIntensity:.25,metalness:.1,roughness:.22}),1,.7,.35);
   this.antennaStar=star;
  }
+
+ makeOcean(){
+  const ocean=new THREE.Group();this.ocean=ocean;this.group.add(ocean);
+  const sand=material(0xe2b69a,.74),pearl=material(0xf3e8cc,.35),reef=material(0x9f53ce,.63);
+  cylinder(ocean,5.25,4.92,.72,0,-1.55,-1.65,sand,50);
+  cylinder(ocean,5.4,5.4,.13,0,-1.18,-1.65,material(0x65bed0,.42),50);
+  const clams=[0xff8a8c,0xffbc70,0xf073c8,0x8d67dd,0x33c8c2];
+  for(let n=0;n<18;n++){
+   const a=n*2.4,r=3.1+(n%4)*.35, x=Math.cos(a)*r,z=Math.sin(a)*r-1.5;
+   const c=new THREE.Group();c.position.set(x,-1.07,z);ocean.add(c);
+   const m=material(clams[n%clams.length],.48);
+   for(let j=0;j<3;j++){
+    const stalk=cylinder(c,.07+.03*j,.095,.64+(j*.14),.18*j-.15,.3+j*.07,0,m,7);
+    stalk.rotation.z=(j-1)*.24;
+    ball(c,.14,.18*j-.15,.75+j*.10,.02,m,.9,1.7,.9);
+   }
+  }
+  const kelp=material(0x15aeb1,.68),kelp2=material(0x48e4b5,.62);
+  for(let i=0;i<7;i++){
+   const x=[-4.45,-3.2,-1.5,1.9,3.2,4.3,-2.4][i],z=-3+(i%3)*1.1;
+   for(let k=0;k<3;k++){
+    const stem=cylinder(ocean,.055,.074,1.5+.13*k,x+.24*k,-.22+.1*k,z+.02*k,k%2?kelp:kelp2,8);
+    stem.rotation.z=.18*(k-1);
+    const leaf=ball(ocean,.27,x+.26*k,.25+.1*k,z+.02*k,k%2?kelp:kelp2,.55,1.3,.34);
+    leaf.rotation.z=.2*k;
+   }
+  }
+  const chest=new THREE.Group();chest.position.set(2.85,-.95,1.5);chest.rotation.y=-.55;ocean.add(chest);
+  const mahogany=material(0x8e4d36,.46),gold=material(0xffd177,.28,{metalness:.4});
+  chest.add(mesh(new THREE.BoxGeometry(1.34,.66,.72),mahogany,0,.24,0));
+  for(const x of [-.48,.48])chest.add(mesh(new THREE.BoxGeometry(.12,.75,.78),gold,x,.24,0));
+  const lid=new THREE.Group();lid.position.set(0,.61,-.31);chest.add(lid);
+  lid.add(mesh(new THREE.BoxGeometry(1.40,.21,.82),mahogany,0,.08,.4));
+  for(const x of [-.49,.49])lid.add(mesh(new THREE.BoxGeometry(.09,.25,.86),gold,x,.09,.4));
+  chest.add(mesh(new THREE.BoxGeometry(.24,.24,.1),gold,0,.20,.41));
+  this.chestLid=lid;
+  // Colorful original fish; small eye highlights help read them as living characters.
+  const fishColors=[0xffba76,0xf978aa,0x93eef4,0xffd775,0x8e85ef];
+  this.fish=[];
+  for(let i=0;i<7;i++){
+   const fish=new THREE.Group();
+   fish.position.set((i%2?1:-1)*(2.3+(i%3)*1.08),.9+(i%3)*.63,-4.2-(i%3));
+   const fm=material(fishColors[i%fishColors.length],.47),black=material(0x172d62,.20);
+   ball(fish,.48,0,0,0,fm,1.3,.63,.48);
+   const tail=cone(fish,.37,.66,-.78,0,0,fm,3);tail.rotation.z=-Math.PI/2;
+   ball(fish,.105,.35,.08,.22,pearl,.95,1,.50);
+   ball(fish,.06,.37,.08,.29,black);
+   fish.scale.setScalar(.65+(i%3)*.18);
+   ocean.add(fish);this.fish.push({obj:fish,y:fish.position.y,phase:i*1.9});
+  }
+  this.bubbles=[];
+  const bubbleMat=new THREE.MeshBasicMaterial({color:0xb5efff,transparent:true,opacity:.57,wireframe:false,depthWrite:false});
+  for(let i=0;i<18;i++){
+   const a=i*2.43,r=2.6+(i%4)*.8;
+   const p=ball(ocean,.08+(i%3)*.04,Math.cos(a)*r,-1+(i%8)*.44,-3+Math.sin(a)*1.6,bubbleMat);
+   this.bubbles.push({obj:p,y:p.position.y,offset:i*1.3});
+  }
+  const arch=new THREE.Mesh(new THREE.TorusGeometry(3.5,.12,10,48,Math.PI),new THREE.MeshStandardMaterial({color:0x9bd9ff,metalness:.2,roughness:.3,emissive:0x1188c2,emissiveIntensity:.23}));
+  arch.position.set(0,-.5,-6.2);arch.rotation.z=Math.PI;ocean.add(arch);
+ }
+ makeLobby(){
+  const lobby=new THREE.Group();this.lobby=lobby;this.group.add(lobby);
+  const purple=material(0x9636bc,.54),lime=material(0x54cfae,.65),gold=material(0xf5c36d,.35,{metalness:.21}),cream=material(0xffe4ab,.55);
+  lobby.add(mesh(new THREE.BoxGeometry(15,.2,13),material(0x2465aa,.6),0,-1.6,-3));
+  lobby.add(mesh(new THREE.BoxGeometry(15,7,.3),material(0x3c9d9e,.7),0,1.8,-8.9));
+  lobby.add(mesh(new THREE.BoxGeometry(15,.28,13),purple,0,5.13,-3));
+  // Teal wallpaper stripes and perspective rails.
+  for(let i=-7;i<=7;i++){
+   lobby.add(mesh(new THREE.BoxGeometry(.20,7,.36),i%2?material(0xa5edc4,.7):lime,i*1.04,1.75,-8.62));
+  }
+  const rug=mesh(new THREE.BoxGeometry(3.35,.03,11.2),material(0xe14f9c,.45),0,-1.44,-3.3);lobby.add(rug);
+  for(const x of [-1.57,1.57])lobby.add(mesh(new THREE.BoxGeometry(.12,.08,11.2),gold,x,-1.41,-3.3));
+  for(let i=0;i<4;i++){
+   const z=-.7-i*2.2;
+   const bulb=ball(lobby,.27,0,4.48,z,cream,.8,.65,.8);
+   cylinder(lobby,.035,.035,.38,0,4.79,z,gold,8);
+   ball(lobby,.43,0,4.40,z,new THREE.MeshStandardMaterial({color:0xffe4ab,emissive:0xffb755,emissiveIntensity:.5,transparent:true,opacity:.47}));
+  }
+  const frameColors=[0xe46cb0,0x4ccbbb,0xffca6c,0x888be9];
+  for(let i=0;i<4;i++){
+   const x=i<2?-4.2:4.2,z=-1.7-(i%2)*3.4;
+   const frame=new THREE.Group();frame.position.set(x,1.30,z);frame.rotation.y=x<0?Math.PI/2:-Math.PI/2;lobby.add(frame);
+   frame.add(mesh(new THREE.BoxGeometry(1.55,1.68,.12),gold,0,0,0));
+   frame.add(mesh(new THREE.BoxGeometry(1.30,1.43,.17),material(frameColors[i],.6),0,0,.06));
+   const eye=material(0xffffff,.55),iris=material(0x19486f,.33);
+   for(const side of [-1,1]){ball(frame,.19,side*.28,.18,.19,eye);ball(frame,.1,side*.28,.16,.35,iris)}
+   ball(frame,.21,0,-.28,.16,material(0x692d7b,.5),1,.45,.5);
+  }
+  // The portal communicates movement to the next challenge world.
+  const portal=lobby.add(mesh(new THREE.BoxGeometry(2.3,3.8,.24),material(0x377abe,.45),0,.35,-8.4));
+  lobby.add(mesh(new THREE.BoxGeometry(1.8,3.2,.28),material(0x67d7b2,.3,{emissive:0x1178b7,emissiveIntensity:.18}),0,.3,-8.16));
+  ball(lobby,.14,.7,.20,-7.97,gold);
+ }
+ makeSpace(){
+  const space=new THREE.Group();this.space=space;this.group.add(space);
+  const dark=material(0x333c8e,.5),metal=material(0x9dd7eb,.32,{metalness:.45}),starMat=new THREE.MeshBasicMaterial({color:0xffed9c});
+  cylinder(space,4.5,4.20,.7,0,-1.52,-1.7,dark,48);
+  cylinder(space,4.65,4.65,.13,0,-1.16,-1.7,material(0x5f7bd0,.35,{emissive:0x294db6,emissiveIntensity:.18}),48);
+  const columns=[-3.6,3.6];
+  for(const x of columns){
+   cylinder(space,.16,.26,4.2,x,1,-3.4,metal,12);
+   const globe=ball(space,.51,x,3.22,-3.4,new THREE.MeshStandardMaterial({color:0xa9faff,emissive:0x2f88ac,emissiveIntensity:.5}),1,1,1);
+  }
+  const planetMat=material(0xe39bbd,.45);
+  const planet=ball(space,1.25,3.1,3.1,-7,planetMat);planet.rotation.z=.4;
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.85,.09,9,62),material(0xffd385,.34,{metalness:.2}));
+  ring.position.copy(planet.position);ring.rotation.x=.5;space.add(ring);this.ring=ring;
+  for(let i=0;i<34;i++){
+   const a=i*2.4,r=3.8+(i%6)*.85,z=-5-(i%6)*1.1;
+   const star=makeStar(space,Math.cos(a)*r,(i%9)*.7-.5,z,.10+(i%3)*.02,starMat);
+   this.sparkles.push({obj:star,offset:i*.45,space:true});
+  }
+  const orbit=new THREE.Mesh(new THREE.TorusGeometry(3.7,.06,8,56),material(0x87ccff,.3,{emissive:0x2460b2,emissiveIntensity:.4}));
+  orbit.position.set(0,1.2,-5.8);orbit.rotation.x=.72;space.add(orbit);
+ }
+
  setTheme(id){
   this.theme=id;
-  if(id==='limits'){
-   this.grass.material.color.set(0x859bcc);
-   this.cliff.material.color.set(0x565a9c);
-   this.rainbow.visible=false;
-   this.scene.fog=new THREE.FogExp2(0x5368aa,.015);
-  }else{
-   this.grass.material.color.set(0x7acb83);
-   this.cliff.material.color.set(0x9c7f63);
-   this.rainbow.visible=true;
-   this.scene.fog=null;
-  }
+  this.base.visible=id==='forest';
+  this.ocean.visible=id==='fractions';
+  this.space.visible=id==='limits';
+  this.lobby.visible=id==='intro';
+  this.guide.position.x=id==='intro'?0:-1.65;
+  this.scene.fog=id==='limits'?new THREE.FogExp2(0x5368aa,.014):null;
+  if(this.rainbow)this.rainbow.visible=id==='forest';
  }
  resize(){
   const r=this.canvas.getBoundingClientRect();
@@ -489,6 +601,10 @@ class World3D {
   const blink=(Math.sin(elapsed*1.5+1.4)>.997)?Math.max(.1,1-(Math.sin(elapsed*1.5+1.4)-.997)*330):1;
   this.eyes.forEach(e=>e.scale.y=blink);
   this.antennaStar.rotation.z+=.012;
+  if(this.fish)for(const item of this.fish){item.obj.position.y=item.y+(prefersReduced?0:Math.sin(elapsed*1.3+item.phase)*.19);item.obj.rotation.y=Math.sin(elapsed*.6+item.phase)*.33}
+  if(this.bubbles)for(const bubble of this.bubbles){bubble.obj.position.y=-1+(elapsed*.36+bubble.offset)%5.1;bubble.obj.scale.setScalar(.8+.2*Math.sin(elapsed+bubble.offset))}
+  if(this.chestLid)this.chestLid.rotation.x=celebrating?-Math.PI*.4:0;
+  if(this.ring)this.ring.rotation.y+=.006;
   for(const item of this.floats)if(!prefersReduced)item.object.position.y=item.y+Math.sin(elapsed*item.speed+item.phase)*.12;
   for(const item of this.sparkles){
    if(item.gem){item.obj.rotation.y=elapsed*.8+item.offset;item.obj.position.y=-.3+(prefersReduced?0:Math.sin(elapsed*1.6+item.offset)*.19)}
@@ -508,7 +624,7 @@ class World3D {
 
 try{
  stage=new World3D($('worldCanvas'));
- stage.setTheme('fractions');
+ stage.setTheme('intro');
  $('sceneStatus').textContent='عالم ثلاثي الأبعاد';
 }catch(err){
  console.warn('3D visual fallback',err);
@@ -518,5 +634,6 @@ try{
 }
 show('startPanel');
 setWorld(pickPack());
+if(stage)stage.setTheme('intro');
 guide('مرحبًا! أنا لُمى. اختر مغامرتك الرياضية ثم اضغط ابدأ.');
 window.addEventListener('pagehide',()=>{if(stage){stage.destroy();stage=null}});
