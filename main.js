@@ -69,18 +69,31 @@ function pdfPages(count) {
 }
 function destroyBook() {
   generation++; clearAudio(); pending.clear();
+  const stage = el('dropzone');
   if (flip) { try { flip.destroy(); } catch (err) { console.warn(err); } flip = null; }
-  el('flipbook').replaceChildren(); pages = []; pdf = null;
+  // StPageFlip.destroy() removes its root element entirely.
+  // Re-create the root so switching to a demo or a new PDF never leaves a blank reader.
+  let root = el('flipbook');
+  if (!root) {
+    root = document.createElement('div');
+    root.id = 'flipbook';
+    root.className = 'flipbook';
+    stage.insertBefore(root, el('dropTip'));
+  } else {
+    root.replaceChildren();
+  }
+  pages = []; pdf = null;
 }
 function mount(nextPages) {
   const container = el('flipbook');
   container.replaceChildren(...nextPages);
   pages = nextPages;
-  flip = new PageFlip(container, { width: 400, height: 560, size: 'stretch', minWidth: 205, maxWidth: 470, minHeight: 290, maxHeight: 660, usePortrait: true, showCover: true, flippingTime: 620, drawShadow: true, maxShadowOpacity: 0.32, autoSize: true, mobileScrollSupport: false, disableFlipByClick: true });
+  flip = new PageFlip(container, { width: 400, height: 560, size: 'stretch', minWidth: 205, maxWidth: 470, minHeight: 290, maxHeight: 660, usePortrait: true, showCover: bookType === 'demo', flippingTime: 620, drawShadow: true, maxShadowOpacity: 0.32, autoSize: true, mobileScrollSupport: false, disableFlipByClick: false });
   const token = generation;
   flip.on('flip', e => { if (token === generation) selectPage(Number(e.data)); });
   flip.loadFromHTML(nextPages);
   selectPage(0);
+  el('dropTip').textContent = bookType === 'pdf' ? 'اسحب طرف الصفحة للتقليب، أو استخدم الأسهم أدناه' : 'اسحب طرف الورقة للتقليب، أو ارفع ملف PDF من جهازك';
 }
 function selectPage(i) {
   current = Math.max(0, Math.min(pages.length-1, Number.isFinite(i) ? i : 0));
@@ -292,7 +305,8 @@ function register() {
   el('shapeDialog').addEventListener('close',stop3d);
   document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>el(b.dataset.close).close());
   el('audio').onchange=e=>{const file=e.target.files?.[0];if(!file)return;if(!file.type.startsWith('audio/') || file.size>20*1024*1024){toast('اختر ملفًا صوتيًا حتى ٢٠ ميجابايت.');return}const old=audioByPage.get(current);if(old)URL.revokeObjectURL(old);audioByPage.set(current,URL.createObjectURL(file));el('audioInfo').textContent='تم إرفاق: '+file.name;toast('التسجيل متاح حتى إعادة تحميل الصفحة.');e.target.value=''};
-  el('flipbook').addEventListener('click',e=>{
+  // Delegate from a stable parent; the flipbook DOM node is replaced when a book changes.
+  el('dropzone').addEventListener('click',e=>{
     const btn=e.target.closest('[data-action]');if(!btn)return;
     e.preventDefault();e.stopPropagation();
     const i=pageFromButton(btn);
