@@ -12,12 +12,12 @@
 <body>
 <header class="topbar">
 <div class="brand"><span class="logo">✦</span><div><strong>ورّاق</strong><small>استوديو الكتب التفاعلية ثلاثية الأبعاد</small></div></div>
-<div class="topactions"><span class="version">الإصدار التجريبي ٠٫٢</span><button id="demo" class="smallbtn">الكتاب التجريبي</button><label class="primary" for="file">📖 حوّل PDF إلى كتاب 3D</label><input id="file" type="file" accept=".pdf,application/pdf" hidden></div>
+<div class="topactions"><span class="version">الإصدار التجريبي ٠٫٣</span><a id="labShortcut" href="./lab.html" class="smallbtn" style="border-color:#e3bf8d;color:#ffdfae">◈ تحويل الرسم إلى 3D</a><button id="demo" class="smallbtn">الكتاب التجريبي</button><label class="primary" for="file">📖 حوّل PDF إلى كتاب 3D</label><input id="file" type="file" accept=".pdf,application/pdf" hidden></div>
 </header>
 <main class="layout">
 <section class="reader" aria-label="عارض الكتاب">
 <div class="reader-intro"><span class="eyebrow">اصنع المعرفة · خطوة بخطوة</span><h1 id="title">كتاب الرياضيات التفاعلي</h1><p id="subtitle">ارفع ملف PDF من جهازك، وقلّب صفحاته بتأثير كتاب ثلاثي الأبعاد.</p></div>
-<div class="toolbar"><span id="status">● الكتاب التجريبي</span><div class="actions"><button id="open3d" class="secondary">◈ استكشف 3D</button><button id="openquiz" class="secondary">✓ اختبر نفسك</button></div></div>
+<div class="toolbar"><span id="status">● الكتاب التجريبي</span><div class="actions"><button id="sendDrawing" class="secondary">✨ شرح رسمة هذه الصفحة</button><button id="open3d" class="secondary">◈ استكشف 3D</button><button id="openquiz" class="secondary">✓ اختبر نفسك</button></div></div>
 <div class="stage" id="dropzone"><div id="flipbook" class="flipbook"></div><p id="dropTip">اسحب طرف الورقة للتقليب أو ارفع PDF من جهازك</p></div>
 <div class="pager"><button id="prev" title="الصفحة السابقة" aria-label="الصفحة السابقة">→</button><div><strong id="current">١</strong><span> / </span><strong id="total">٤</strong><small>الصفحات</small></div><button id="next" title="الصفحة التالية" aria-label="الصفحة التالية">←</button></div>
 <p class="privacy">🔒 يعالج الموقع ملفات PDF داخل متصفحك؛ لا تُرفع إلى خادم.</p>
