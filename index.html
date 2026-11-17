@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#121d32">
 <meta name="description" content="ورّاق: استوديو الكتب التفاعلية ثلاثية الأبعاد — PDF، مجسمات، صوت، أسئلة.">
 <title>ورّاق | حوّل PDF إلى كتاب ثلاثي الأبعاد</title>
-<link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="./style.css?v=0.2.1">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/"}}</script>
 </head>
 <body>
@@ -33,6 +33,6 @@
 <dialog id="shapeDialog" class="dialog"><div class="dialogheader"><div><small>معمل الهندسة</small><h2 id="shapeTitle">المجسم ثلاثي الأبعاد</h2></div><button data-close="shapeDialog" class="close" aria-label="إغلاق">×</button></div><div id="viewer" class="viewer"></div><div class="dialogfooter"><div id="angleRow"><label for="angle">زاوية القطاع: <strong id="angleOutput">٩٠°</strong></label><input id="angle" type="range" min="15" max="330" step="5" value="90"></div><span id="shapeInfo">اسحب للتدوير وإصبعين للتكبير</span><button id="reset3d" class="secondary">إعادة العرض</button></div></dialog>
 <dialog id="quizDialog" class="dialog quizdialog"><div class="dialogheader"><div><small>تقويم تفاعلي</small><h2>اختبر فهمك</h2></div><button data-close="quizDialog" class="close" aria-label="إغلاق">×</button></div><div class="quizbody"><span id="qPage"></span><h3 id="qTitle"></h3><div id="qChoices"></div><p id="feedback" role="status"></p><button id="retry" class="secondary">إعادة المحاولة</button></div></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script type="module" src="./main.js"></script>
+<script type="module" src="./main.js?v=0.2.1"></script>
 <script>setTimeout(()=>{if(!window.__warraqReady){document.getElementById('status').textContent='تعذر تحميل المكتبات. تحقق من الإنترنت ثم أعد المحاولة.'}},12000)</script>
 </body></html>
