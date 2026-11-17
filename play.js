@@ -6,6 +6,17 @@ const ar = v => String(v).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)])
 const state = {pack:null,index:0,score:0,tries:0,revealed:false,muted:false,talking:false,celebrationUntil:0};
 let stage=null, voiceTurn=0, audioCtx=null, lastMsg='';
 const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function escapeMath(value){return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function typesetMath(value){
+ let content=escapeMath(value);
+ content=content.replace(/([٠-٩]+)⁄([٠-٩]+)/g,(_,top,bottom)=>'<span class="math-frac" aria-label="'+top+' على '+bottom+'"><span class="top">'+top+'</span><span class="bottom">'+bottom+'</span></span>');
+ content=content.replace(/نها س ← ([٠-٩]+)\s*:/g,(_,n)=>'<span class="math-lim">نها<small>س ← '+n+'</small></span>');
+ return content;
+}
+function mathSpeech(value){
+ return String(value).replace(/([٠-٩]+)⁄([٠-٩]+)/g,'$1 على $2').replace(/نها س ← ([٠-٩]+)\s*:/g,'نهاية الدالة عندما سين تقترب من $1:');
+}
+
 const color = v => new THREE.Color(v);
 
 function show(which) {
@@ -92,14 +103,14 @@ function showQuestion(announce=false) {
  state.revealed=false;state.tries=0;
  const q=currentQuestion();
  $('questionLead').textContent=q.lead;
- $('math').textContent=q.math;
+ $('math').innerHTML=typesetMath(q.math);
  $('feedback').textContent='';
  $('next').hidden=true;
  $('hint').disabled=false;
  drawAnswers(q);setProgress();
  if(announce) {
-  const message=state.index===0?state.pack.welcome+' السؤال الأول: '+q.lead+' '+q.math:
-    'والآن السؤال '+ar(state.index+1)+'. '+q.lead+' '+q.math;
+  const message=state.index===0?state.pack.welcome+' السؤال الأول: '+q.lead+' '+mathSpeech(q.math):
+    'والآن السؤال '+ar(state.index+1)+'. '+q.lead+' '+mathSpeech(q.math);
   speak(message);
  }
 }
@@ -192,7 +203,7 @@ $('hint').onclick=()=>{
  $('feedback').textContent=message;speak(message);
 };
 $('repeat').onclick=()=>{
- const q=currentQuestion();speak('استمع إلى السؤال مرة أخرى. '+q.lead+' '+q.math);
+ const q=currentQuestion();speak('استمع إلى السؤال مرة أخرى. '+q.lead+' '+mathSpeech(q.math));
 };
 $('listen').onclick=()=>speak(lastMsg||'أهلًا بك في وادي النجوم.');
 $('mute').onclick=()=>setMuted(!state.muted);
