@@ -266,6 +266,8 @@ function saveBest(packId,n){
  try{localStorage.setItem('warraq-play-best-'+packId,String(n))}catch{}
 }
 function finish(){
+ if(stage)stage.setTheme('forest');
+ $('worldName').textContent='غابة المكافآت';
  show('finishPanel');
  const best=Math.max(getBest(state.pack.id),state.score);
  saveBest(state.pack.id,best);
