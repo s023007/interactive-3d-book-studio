@@ -217,7 +217,7 @@ async function analyze(){
  const image=previewCrop();
  const button=$('analyze');button.disabled=true;button.textContent='جاري قراءة الرسم ...';
  try{
-  const response=await fetch(endpoint.href,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:image.toDataURL('image/jpeg',.82),source:sourceName})});
+  const response=await fetch(endpoint.href,{method:'POST',headers:{'Content-Type':'application/json','X-Warraq-Code':$('accessCode').value},body:JSON.stringify({image:image.toDataURL('image/jpeg',.82),source:sourceName})});
   if(!response.ok)throw Error('الخادم أعاد HTTP '+response.status);
   const data=await response.json();
   const kind=nameMap[data.kind]?data.kind:'unknown';
