@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173655">
+  <meta name="description" content="مغامرة ورّاق: مراجعة رياضيات بشخصية ثلاثية الأبعاد، شرح صوتي، أسئلة ومكافآت.">
+  <title>مغامرة ورّاق | تعلّم الرياضيات باللعب</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./play.css?v=0.4.0">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js"}}</script>
+</head>
+<body>
+<div class="app-shell">
+<header class="navigation">
+  <a class="back-link" href="./index.html" title="العودة إلى موقع ورّاق"><span aria-hidden="true">←</span><span>ورّاق</span></a>
+  <div class="game-brand"><span class="brand-spark" aria-hidden="true">✦</span><span>مغامرة الرياضيات</span></div>
+  <div class="nav-tools"><div class="score-pill" aria-label="نجوم المغامرة"><span aria-hidden="true">⭐</span><strong id="score">٠</strong></div><button id="mute" class="round-button" type="button" aria-label="إيقاف الصوت" title="تشغيل الصوت أو إيقافه"><span id="muteIcon">🔊</span></button></div>
+</header>
+<main id="gameArea" class="game">
+  <section class="land" aria-label="عالم ثلاثي الأبعاد">
+    <div class="world-tag"><span class="small-star" aria-hidden="true">✧</span><span id="worldName">وادي النجوم</span><span class="world-mark" id="sceneStatus">عالم ثلاثي الأبعاد</span></div>
+    <canvas id="worldCanvas" aria-label="مشهد تفاعلي ثلاثي الأبعاد لشخصية لُمى وسط عالم تعليمي"></canvas>
+    <div id="worldFallback" class="world-fallback" hidden><div class="fallback-hills" aria-hidden="true">🌲 ✨ 🌳</div><div class="fallback-creature" aria-hidden="true">🦊</div><p>مرحبًا بك في عالم الرياضيات!</p></div>
+    <div class="speech-bubble" role="status" aria-live="polite"><span class="guide-tag">لُمى <span aria-hidden="true">✦</span> مرشدتك</span><p id="guideLine">أهلًا بك! أنا لُمى، مستعدة لنبدأ مغامرة رياضية رائعة؟</p><button id="listen" class="listen" type="button" title="استمع إلى شرح لُمى" aria-label="استمع إلى لُمى">▶ <span>استمع</span></button></div>
+    <div id="confetti" aria-hidden="true"></div>
+  </section>
+  <section class="task-card" aria-label="التحدي الرياضي">
+    <div id="startPanel" class="panel">
+      <span class="eyebrow">مغامرة تفاعلية ✨</span>
+      <h1>أهلًا بك في عالم ورّاق!</h1>
+      <p class="desc">حل مسائل الرياضيات، استمع إلى مرشدتك لُمى، واجمع النجوم. كل إجابة تقرّبك من كنز المعرفة!</p>
+      <div class="field">
+        <label for="pack">اختر مغامرتك التجريبية</label>
+        <select id="pack">
+          <option value="fractions">الصف الخامس · الكسور · وادي النجوم</option>
+          <option value="limits">الصف الثاني عشر متقدم · النهايات · مرصد المجرّات</option>
+        </select>
+      </div>
+      <div class="demo-note">الأسئلة الحالية أمثلة أصلية للتجربة، وليست من كتاب مدرسي محدد. سنربط المنصة بمحتوى الكتب بعد تجهيزه ومراجعته.</div>
+      <button id="start" class="action-btn" type="button">ابدأ المغامرة <span aria-hidden="true">✦</span></button>
+    </div>
+    <div id="questionPanel" class="panel" hidden>
+      <div class="question-meta"><span id="gradeLabel" class="tag">الصف الخامس</span><span id="questionCounter">السؤال ١ من ٣</span></div>
+      <div class="progress" aria-label="التقدم في المرحلة"><div id="progressFill" class="progress-fill"></div></div>
+      <h1 id="questionLead">فكّر ثم اختر الإجابة الصحيحة</h1>
+      <div id="math" class="math-prompt" dir="rtl"></div>
+      <div id="choices" class="choice-grid" role="group" aria-label="خيارات الإجابة"></div>
+      <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+      <div class="question-actions"><button id="hint" type="button" class="soft-button">💡 تلميح</button><button id="repeat" type="button" class="soft-button">🔈 اسمع السؤال</button><button id="next" type="button" class="action-btn" hidden>السؤال التالي ←</button></div>
+    </div>
+    <div id="finishPanel" class="panel finish" hidden>
+      <span class="medal" aria-hidden="true">🏆</span>
+      <h1>انتهت مغامرتك!</h1>
+      <p id="resultText" class="desc">لقد جمعت نجومًا جديدة. أحسنت!</p>
+      <div class="result-stars"><span aria-hidden="true">⭐</span><strong id="finalScore">٠</strong><span class="result-label">نجوم</span></div>
+      <p class="best" id="bestScore"></p>
+      <div class="finish-actions"><button id="again" type="button" class="action-btn">العب مرة أخرى</button><button id="change" type="button" class="soft-button">اختر صفًا آخر</button></div>
+    </div>
+  </section>
+</main>
+<footer class="footer"><span>ورّاق · تجربة تعلم باللعب ٠٫٤</span><span>نموذج أولي · لعبة أصلية · دون حساب مستخدم</span></footer>
+</div>
+<script type="module" src="./play.js?v=0.4.0"></script>
+</body>
+</html>
