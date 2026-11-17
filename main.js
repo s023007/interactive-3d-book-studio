@@ -292,6 +292,21 @@ function register() {
   el('file').onchange=e=>{const file=e.target.files?.[0];if(file)void loadFile(file);e.target.value=''};
   el('prev').onclick=()=>flip?.flipPrev();
   el('next').onclick=()=>flip?.flipNext();
+  el('sendDrawing').onclick=async()=>{
+    if(bookType==='pdf' && pdf){
+      try{
+        await renderPage(current,generation);
+        const canvas=pages[current]?.querySelector('canvas');
+        if(canvas&&canvas.width>8&&canvas.height>8){
+          // Save a short-lived preview for the lab within the same browser tab.
+          sessionStorage.setItem('warraq-drawing-preview',canvas.toDataURL('image/jpeg',0.76));
+        }
+      }catch(err){console.warn('Could not transfer page preview',err)}
+    }else{
+      try{sessionStorage.removeItem('warraq-drawing-preview')}catch{}
+    }
+    window.location.href='./lab.html';
+  };
   el('open3d').onclick=()=>open3d();
   el('showshape').onclick=()=>open3d();
   el('openquiz').onclick=()=>openQuiz();
