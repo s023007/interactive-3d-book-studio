@@ -212,12 +212,12 @@ function sampleValidator(v){
 async function analyze(){
  if(!source){toast('ارفع صورة أو اختر صفحة PDF أولًا.');return}
  const url=$('workerUrl').value.trim();
- if(!/^https:\/\/[^ \\/]+\\/.*/.test(url)){toast('أضف رابط HTTPS صالحًا لخادم التحليل.');return}
+ let endpoint; try { endpoint=new URL(url); if(endpoint.protocol!=='https:') throw Error('HTTPS required'); } catch {toast('أضف رابط HTTPS صالحًا لخادم التحليل.');return}
  try{localStorage.setItem('warraq-worker-url',url)}catch{}
  const image=previewCrop();
  const button=$('analyze');button.disabled=true;button.textContent='جاري قراءة الرسم ...';
  try{
-  const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:image.toDataURL('image/jpeg',.82),source:sourceName})});
+  const response=await fetch(endpoint.href,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:image.toDataURL('image/jpeg',.82),source:sourceName})});
   if(!response.ok)throw Error('الخادم أعاد HTTP '+response.status);
   const data=await response.json();
   const kind=nameMap[data.kind]?data.kind:'unknown';
