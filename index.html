@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#121d32">
 <meta name="description" content="ورّاق: استوديو الكتب التفاعلية ثلاثية الأبعاد — PDF، مجسمات، صوت، أسئلة.">
-<title>ورّاق | استوديو الكتب التفاعلية</title>
+<title>ورّاق | حوّل PDF إلى كتاب ثلاثي الأبعاد</title>
 <link rel="stylesheet" href="./style.css">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/"}}</script>
 </head>
 <body>
 <header class="topbar">
 <div class="brand"><span class="logo">✦</span><div><strong>ورّاق</strong><small>استوديو الكتب التفاعلية ثلاثية الأبعاد</small></div></div>
-<div class="topactions"><span class="version">الإصدار التجريبي ٠٫١</span><button id="demo" class="smallbtn">الكتاب التجريبي</button><label class="primary" for="file">＋ افتح PDF</label><input id="file" type="file" accept=".pdf,application/pdf" hidden></div>
+<div class="topactions"><span class="version">الإصدار التجريبي ٠٫٢</span><button id="demo" class="smallbtn">الكتاب التجريبي</button><label class="primary" for="file">📖 حوّل PDF إلى كتاب 3D</label><input id="file" type="file" accept=".pdf,application/pdf" hidden></div>
 </header>
 <main class="layout">
 <section class="reader" aria-label="عارض الكتاب">
-<div class="reader-intro"><span class="eyebrow">اصنع المعرفة · خطوة بخطوة</span><h1 id="title">كتاب الرياضيات التفاعلي</h1><p id="subtitle">كتاب قابل للتقليب، ونماذج ثلاثية الأبعاد، وصوت، وأسئلة.</p></div>
+<div class="reader-intro"><span class="eyebrow">اصنع المعرفة · خطوة بخطوة</span><h1 id="title">كتاب الرياضيات التفاعلي</h1><p id="subtitle">ارفع ملف PDF من جهازك، وقلّب صفحاته بتأثير كتاب ثلاثي الأبعاد.</p></div>
 <div class="toolbar"><span id="status">● الكتاب التجريبي</span><div class="actions"><button id="open3d" class="secondary">◈ استكشف 3D</button><button id="openquiz" class="secondary">✓ اختبر نفسك</button></div></div>
-<div class="stage" id="dropzone"><div id="flipbook" class="flipbook"></div><p id="dropTip">يمكنك إسقاط ملف PDF هنا</p></div>
+<div class="stage" id="dropzone"><div id="flipbook" class="flipbook"></div><p id="dropTip">اسحب طرف الورقة للتقليب أو ارفع PDF من جهازك</p></div>
 <div class="pager"><button id="prev" title="الصفحة السابقة" aria-label="الصفحة السابقة">→</button><div><strong id="current">١</strong><span> / </span><strong id="total">٤</strong><small>الصفحات</small></div><button id="next" title="الصفحة التالية" aria-label="الصفحة التالية">←</button></div>
 <p class="privacy">🔒 يعالج الموقع ملفات PDF داخل متصفحك؛ لا تُرفع إلى خادم.</p>
 </section>
@@ -29,7 +29,7 @@
 <div class="panelnote">بيانات الأسئلة والنصوص تحفظ محليًا في هذا المتصفح. لا تُعدَّل صفحات PDF الأصلية.</div>
 </aside>
 </main>
-<footer><span>ورّاق — من ورقة ثابتة إلى تجربة تفاعلية.</span><span>نسخة أولية مفتوحة للتطوير</span></footer>
+<footer><span>ورّاق — من ورقة ثابتة إلى تجربة تفاعلية.</span><span>نسخة ٠٫٢ — تحسين محرك الكتب</span></footer>
 <dialog id="shapeDialog" class="dialog"><div class="dialogheader"><div><small>معمل الهندسة</small><h2 id="shapeTitle">المجسم ثلاثي الأبعاد</h2></div><button data-close="shapeDialog" class="close" aria-label="إغلاق">×</button></div><div id="viewer" class="viewer"></div><div class="dialogfooter"><div id="angleRow"><label for="angle">زاوية القطاع: <strong id="angleOutput">٩٠°</strong></label><input id="angle" type="range" min="15" max="330" step="5" value="90"></div><span id="shapeInfo">اسحب للتدوير وإصبعين للتكبير</span><button id="reset3d" class="secondary">إعادة العرض</button></div></dialog>
 <dialog id="quizDialog" class="dialog quizdialog"><div class="dialogheader"><div><small>تقويم تفاعلي</small><h2>اختبر فهمك</h2></div><button data-close="quizDialog" class="close" aria-label="إغلاق">×</button></div><div class="quizbody"><span id="qPage"></span><h3 id="qTitle"></h3><div id="qChoices"></div><p id="feedback" role="status"></p><button id="retry" class="secondary">إعادة المحاولة</button></div></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
