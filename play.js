@@ -234,7 +234,7 @@ class World3D {
   this.scene=scene;this.canvas=canvas;this.theme='fractions';
   this.clock=new THREE.Clock();this.floats=[];this.sparkles=[];this.eyes=[];this.mouth=null;
   this.renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power'});
-  this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.7));
+  this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.4));
   this.renderer.outputColorSpace=THREE.SRGBColorSpace;
   this.renderer.toneMapping=THREE.ACESFilmicToneMapping;
   this.renderer.toneMappingExposure=1.35;
@@ -365,6 +365,10 @@ class World3D {
  }
  animate(now){
   if(!this.renderer)return;
+  this.raf=requestAnimationFrame(this.animate);
+  // 30 fps is sufficient for a talking 3D guide and gentler on mobile batteries.
+  if(document.hidden || (this.last && now-this.last<33))return;
+  this.last=now;
   const elapsed=this.clock.getElapsedTime(),celebrating=now<state.celebrationUntil;
   const bob=(prefersReduced?0:Math.sin(elapsed*2.6)*.075);
   this.guide.position.y=-.52+bob+(celebrating?Math.abs(Math.sin(elapsed*11))*.40:0);
@@ -381,7 +385,6 @@ class World3D {
    else if(!prefersReduced){const scale=.8+.19*Math.sin(elapsed*1.8+item.offset);item.obj.scale.setScalar(scale)}
   }
   this.renderer.render(this.scene,this.camera);
-  this.raf=requestAnimationFrame(this.animate);
  }
  destroy(){
   cancelAnimationFrame(this.raf);this.observer.disconnect();
