@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>تجربة الثعلب والصوت | ورّاق</title>
+<title>الثعلب والربع الناقص | ورّاق</title>
 <link rel="stylesheet" href="./fox-preview.css">
 <script type="importmap">{"imports":{
  "three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js",
@@ -12,11 +12,25 @@
 </head>
 <body>
 <main>
-<header><a href="./adventure.html">ورّاق</a><span>اختبار الشخصية</span></header>
-<h1>الثعلب في ورّاق</h1>
-<div id="stage"><canvas id="character" aria-label="ثعلب ثلاثي الأبعاد"></canvas></div>
+<header><a href="./adventure.html">ورّاق</a><span>مدينة المرجان</span></header>
+<h1>الثعلب والربع الناقص</h1>
+<div id="stage"><canvas id="character" aria-label="ثعلب ثلاثي الأبعاد"></canvas><div id="reef-gate" class="reef-gate" aria-hidden="true"><span></span><span></span></div></div>
 <p id="status" role="status">جارٍ تحميل الثعلب…</p>
 <blockquote>«معنا نصف الصدفة. أي قطعة تكمل ثلاثة أرباع؟»</blockquote>
+<section class="mission" aria-labelledby="mission-title">
+<h2 id="mission-title">أكمل الصدفة لفتح البوابة</h2>
+<div class="shell-board" id="shell-board" role="img" aria-label="ربعان من أربعة">
+<i class="half first"></i><i class="half second"></i><i id="missing"></i><i></i>
+</div>
+<div class="choices" aria-label="قطع الصدفة" role="group">
+<button type="button" data-piece="1" aria-label="ربع"><span class="fraction"><b>١</b><span>٤</span></span></button>
+<button type="button" data-piece="2" aria-label="نصف"><span class="fraction"><b>١</b><span>٢</span></span></button>
+<button type="button" data-piece="3" aria-label="ثلاثة أرباع"><span class="fraction"><b>٣</b><span>٤</span></span></button>
+</div>
+<p id="feedback" role="status">انظر إلى الأرباع الأربعة، ثم اختر القطعة الناقصة.</p>
+<button id="replay" type="button" hidden>أعد المهمة</button>
+</section>
+<details id="voice-tools"><summary>الصوت وحركة الثعلب</summary>
 <label for="recording">أرفق تسجيلًا عربيًا لهذه الجملة</label>
 <input id="recording" type="file" accept="audio/*">
 <div class="actions">
@@ -24,6 +38,7 @@
 <button id="walk" disabled aria-pressed="false">جرّب المشي</button>
 </div>
 <p class="note">يُشغّل الملف من جهازك. يدخل الصوت في معاينة حركة الفك ويبقى داخل الصفحة.</p>
+</details>
 </main>
 <script type="module" src="./fox-preview.js"></script>
 </body>
