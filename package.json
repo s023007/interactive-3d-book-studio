@@ -1,0 +1,13 @@
+{
+  "name": "warraq-adventure",
+  "private": true,
+  "scripts": {
+    "serve": "http-server -a 127.0.0.1 -p 4173 -c-1",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "http-server": "^14.1.1",
+    "three": "^0.174.0"
+  }
+}
