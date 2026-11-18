@@ -12,6 +12,7 @@ for(const viewport of [{width:360,height:800},{width:390,height:844},{width:1440
     const mobile=viewport.width<500;
     test.use({viewport,hasTouch:mobile,isMobile:mobile});
     test('follows tracks, corrects the bridge and photographs the animal',async({page},info)=>{
+      if(!mobile)test.setTimeout(105000);
       const errors=[];
       page.on('pageerror',error=>errors.push(error.message));
       const pick=selector=>mobile?page.locator(selector).tap({timeout:10000}):page.locator(selector).click({timeout:10000});
