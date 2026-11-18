@@ -62,3 +62,77 @@ body{background:#19194e}
 }
 @media(max-height:690px){.question-top{top:9%}.scene-narrator{top:17%}.question-dock{max-height:60%;bottom:1%}.equation{min-height:51px}.answer{min-height:48px}.ribbon{top:10%}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* Keep the stage and its controls in separate vertical bands. */
+.game[data-scene="quest"] {
+  --stage-end: 53%;
+  min-height: 720px;
+  background: radial-gradient(ellipse at 48% 13%, #318aa0, #102849 70%);
+}
+.game[data-scene="quest"][data-theme="limits"] {
+  background: radial-gradient(ellipse at 52% 19%, #434e91, #141b40 74%);
+}
+.game[data-scene="quest"] #stage3d { inset: 95px 0 auto; height: calc(var(--stage-end) - 95px); }
+.quest-screen { display: grid; grid-template-rows: var(--stage-end) auto; align-content: start; }
+.question-top { top: 68px; width: min(92%, 650px); z-index: 2; }
+.scene-narrator {
+  top: 118px; inset-inline-start: max(4%, calc((100% - 900px) / 2));
+  width: min(41%, 235px); min-height: auto; padding: 5px 8px;
+  grid-template-columns: 1fr auto; align-items: center;
+  background: #142a46ed; color: #fff; border: 1px solid #8dc8ce;
+  border-radius: 13px; box-shadow: 0 4px 16px #08182e77;
+}
+.scene-narrator .narrator-head { grid-column: auto; color: #a7f6e4; }
+.scene-narrator p { grid-column: 1 / -1; grid-row: 2; max-height: 4.6em; overflow: auto; }
+.narrator-voice { grid-column: 2; grid-row: 1; width: 44px; height: 44px; }
+.question-dock {
+  grid-row: 2; position: relative; inset: auto; transform: none; justify-self: center;
+  width: min(94%, 720px); max-height: none; overflow: visible;
+  padding: 10px 14px 12px; border: 1px solid #75cfdd;
+  background: linear-gradient(155deg,#133e5c,#102744);
+  box-shadow: 0 0 28px #58c6db27, 0 12px 35px #0005;
+}
+[data-theme="limits"] .question-dock { background: linear-gradient(155deg,#252951,#151d42); border-color: #a8a9f2; }
+.question-tag { margin: 0 auto 4px; padding: 2px 12px; border: 0; box-shadow: none; }
+.equation { direction: ltr; unicode-bidi: isolate; flex-wrap: nowrap; min-height: 50px; }
+.math-symbol, .math-expression { display: inline-block; direction: ltr; unicode-bidi: isolate; }
+.math-frac { direction: ltr; unicode-bidi: isolate; }
+.answer { min-height: 48px; }
+.answer.correct:disabled { opacity: 1; }
+.hud-btn, .hint-btn, .next-btn, .voice-top button { min-width: 44px; min-height: 44px; }
+.lower-actions { flex-wrap: wrap; }
+.response { overflow-wrap: anywhere; }
+.scene-error { top: auto; bottom: 0; z-index: 3; padding: 4px; background: #202b52; }
+.no-webgl[data-scene="quest"] .scene-error { bottom: auto; top: calc(var(--stage-end) - 54px); }
+.no-webgl[data-scene="quest"]::before {
+  content: "✦"; position: absolute; top: 24%; left: 20%; font-size: 4rem; color: #ffe18a;
+}
+.avatar-board .soft-action { margin: 0 4px 10px; }
+.voice-modal blockquote { margin: 8px 0; padding: 8px 12px; background: #dceef6; border-inline-start: 3px solid #248395; }
+@media (max-width: 699px) {
+  .game[data-scene="quest"] { --stage-end: 51%; }
+  .scene-narrator p { font-size: 11px; }
+  .question-dock { padding: 8px 10px 10px; }
+  .question-tag { font-size: 10px; }
+  .equation { font-size: clamp(16px, 5.3vw, 27px); gap: 4px; }
+}
+@media (max-height: 740px) {
+  .game[data-scene="quest"] { height: auto; min-height: 740px; }
+}
+.game:is([data-scene="reward"], [data-scene="avatar"]) #stage3d {
+  inset: 68px 0 auto;
+  height: calc(52% - 68px);
+}
+.reward-hero, .avatar-board {
+  top: 53%;
+  transform: translateX(-50%);
+  max-height: 44%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.reward-hero { padding-block: 12px; }
+.reward-emblem { font-size: clamp(36px, 8vh, 60px); line-height: 1.1; }
+.reward-hero p { margin-block: 6px; }
+.reward-buttons { margin-top: 8px; }
+.avatar-board .swatches { margin-block: 12px 16px; }
+.answer .math-frac { font-size: 1em; }
