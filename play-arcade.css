@@ -123,3 +123,25 @@ body.limits-world .land{background:radial-gradient(circle at 50% 35%,#79cfff,#46
  .speech-bubble{bottom:6px}
 }
 @media(prefers-reduced-motion:reduce){.scene-sparkle{animation:none}}
+
+/* 0.6 — keep the guide visible while the question is played, not a scrolling form. */
+.choice .math-frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.04;margin-inline:.1em;min-width:1em}
+.choice .math-frac .top{display:block;width:100%;border-bottom:2px solid currentColor;padding:0 .12em .07em;font-size:.8em}
+.choice .math-frac .bottom{display:block;font-size:.8em;padding-top:.08em}
+#recordedOptions{display:grid;gap:8px}#recordedOptions[hidden]{display:none}
+#recordedOptions .save-voice{width:100%;margin-top:7px}
+@media(max-width:770px){
+ .game{height:calc(100svh - 52px);min-height:600px}
+ .task-card{top:34%;left:10px;right:10px}
+ .speech-bubble{top:68px;bottom:auto;left:9px;right:auto;width:min(51%,250px);max-height:145px;padding:7px 9px;grid-template-columns:1fr;box-shadow:0 4px 0 #4a86b0,0 7px 16px #05286850}
+ .speech-bubble p{font-size:11px;line-height:1.4;max-height:65px;overflow:auto}
+ .speech-bubble .listen{justify-self:start;font-size:10px;padding:4px 8px}
+ .speech-bubble .guide-tag{font-size:10px}
+ .world-tag{max-width:50%;font-size:11px}
+ #questionPanel{max-height:calc(66svh - 44px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+ #questionPanel .math-prompt{min-height:75px;font-size:clamp(21px,5.5vw,29px);padding:10px}
+ #questionPanel .choice{min-height:60px;font-size:clamp(18px,5vw,24px)}
+ #questionPanel h1{font-size:clamp(17px,4.8vw,22px);line-height:1.4}
+ .question-actions{gap:6px}
+}
+@media(max-width:390px){.speech-bubble{top:59px;width:48%}.task-card{top:32%}}
