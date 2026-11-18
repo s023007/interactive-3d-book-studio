@@ -8,46 +8,116 @@ let playback;
 
 const gate = document.querySelector("#reef-gate");
 const shell = document.querySelector("#shell-board");
-const missing = document.querySelector("#missing");
 const feedback = document.querySelector("#feedback");
 const replay = document.querySelector("#replay");
-const choices = [...document.querySelectorAll("[data-piece]")];
+const next = document.querySelector("#next-gate");
+const restart = document.querySelector("#restart");
+const title = document.querySelector("#mission-title");
+const choiceGroup = document.querySelector("#choices");
+const progress = document.querySelector("#gate-progress");
+const line = document.querySelector("#mission-line");
+const number = new Intl.NumberFormat("ar-OM", {numberingSystem:"arab"});
+const checkpoint = "warraq.fox-coral.gate.v1";
 let act = () => {};
 
-for (const choice of choices) {
-  choice.addEventListener("click", () => {
-    if (!replay.hidden) return;
-    choices.forEach(button => button.setAttribute("aria-pressed",String(button===choice)));
-    if(choice.dataset.piece!=="1"){
-      feedback.textContent = choice.dataset.piece==="2"
-        ? "النصف يساوي ربعين. معنا ربعان بالفعل، ونحتاج ربعًا واحدًا فقط."
-        : "هذه ثلاثة أرباع وحدها. لدينا ربعان، فابحث عن قطعة أصغر.";
-      act("sit");
-      return;
-    }
-    missing.classList.add("filled");
-    shell.ariaLabel = "ثلاثة أرباع من الصدفة";
-    gate.classList.add("open");
-    feedback.textContent = "فُتحت البوابة! نصف الصدفة يساوي ربعين، ومع ربع آخر يصبح المجموع ثلاثة أرباع.";
-    replay.hidden = false;
-    replay.focus({preventScroll:true});
-    choices.forEach(button => { button.disabled = true; });
-    act("jump");
-  });
+// Each option describes the same-size cells used by the gate and its display fraction.
+const missions = [
+  {
+    name:"بوابة الأرباع", whole:4, initial:2, target:3,
+    line:"معنا نصف الصدفة. أي قطعة تكمل ثلاثة أرباع؟",
+    options:[[1,4,"ربع"],[1,2,"نصف"],[3,4,"ثلاثة أرباع"]],
+    success:"نصف الصدفة يساوي ربعين، ومع ربع آخر يصبح المجموع ثلاثة أرباع.",
+  },
+  {
+    name:"بوابة السداسيات", whole:6, initial:3, target:5,
+    line:"معنا نصف الصدفة، أي ثلاثة أسداس. أي قطعة تكمل خمسة أسداس؟",
+    options:[[1,6,"سدس واحد"],[1,3,"ثلث"],[1,2,"نصف"]],
+    success:"الثلث يساوي سدسين. ثلاثة أسداس وسدسان تساوي خمسة أسداس.",
+  },
+  {
+    name:"بوابة الأثمان", whole:8, initial:2, target:5,
+    line:"معنا ربع الصدفة، أي ثمنان. أي قطعة تكمل خمسة أثمان؟",
+    options:[[1,2,"نصف"],[1,4,"ربع"],[3,8,"ثلاثة أثمان"]],
+    success:"الربع يساوي ثمنين. ثمنان وثلاثة أثمان تساوي خمسة أثمان.",
+  },
+];
+
+function readCheckpoint(){
+  try {
+    const saved = Number(localStorage.getItem(checkpoint));
+    if(Number.isInteger(saved)&&saved>=0&&saved<missions.length)return saved;
+  }catch{}
+  return 0;
 }
-replay.onclick = () => {
-  choices.forEach(button => {
-    button.disabled = false;
-    button.removeAttribute("aria-pressed");
-  });
+let stageIndex = readCheckpoint();
+
+function paintShell(cells){
+  const mission = missions[stageIndex];
+  const filled = mission.initial+cells;
+  shell.ariaLabel = mission.whole===4 ? (cells?"ثلاثة أرباع من الصدفة":"ربعان من أربعة")
+    : number.format(filled)+" من "+number.format(mission.whole);
+  shell.replaceChildren(...Array.from({length:mission.whole},(_,index)=>{
+    const cell=document.createElement("i");
+    if(index<mission.initial)cell.className="half";
+    else if(index<filled)cell.className="filled";
+    return cell;
+  }));
+}
+
+function selectPiece(cells,button){
+  const mission = missions[stageIndex];
+  const missing = mission.target-mission.initial;
+  for(const choice of choiceGroup.children)choice.setAttribute("aria-pressed",String(choice===button));
+  if(cells!==missing){
+    feedback.textContent = stageIndex===0 ? "معنا ربعان بالفعل، ونحتاج ربعًا واحدًا فقط." :
+      "تغطي هذه القطعة "+number.format(cells)+" من الأجزاء المتساوية. نحتاج "+number.format(missing)+" منها.";
+    act("sit");
+    return;
+  }
+  paintShell(cells);
+  gate.classList.add("open");
+  const isLast = stageIndex===missions.length-1;
+  feedback.textContent = (isLast?"أكملت رحلة المرجان! ":"فُتحت البوابة! ")+mission.success;
+  for(const choice of choiceGroup.children)choice.disabled=true;
+  next.hidden=isLast;
+  replay.hidden=false;
+  (isLast?replay:next).focus({preventScroll:true});
+  act("jump");
+}
+
+function renderMission(focus=false){
+  const mission = missions[stageIndex];
+  try{localStorage.setItem(checkpoint,String(stageIndex));}catch{}
+  title.textContent=mission.name;
+  line.textContent=mission.line;
+  restart.hidden=stageIndex===0;
+  progress.replaceChildren(...missions.map((item,index)=>{
+    const step=document.createElement("li");
+    step.textContent=number.format(index+1);
+    step.title=item.name;
+    if(index===stageIndex)step.setAttribute("aria-current","step");
+    if(index<stageIndex)step.className="completed";
+    return step;
+  }));
+  paintShell(0);
   gate.classList.remove("open");
-  missing.classList.remove("filled");
-  shell.ariaLabel = "ربعان من أربعة";
-  feedback.textContent = "انظر إلى الأرباع الأربعة، ثم اختر القطعة الناقصة.";
-  replay.hidden = true;
-  choices[0].focus({preventScroll:true});
+  next.hidden=replay.hidden=true;
+  feedback.textContent="اختر القطعة الناقصة لتفتح البوابة.";
+  choiceGroup.replaceChildren(...mission.options.map(([numerator,denominator,label])=>{
+    const button=document.createElement("button");
+    button.type="button";
+    button.ariaLabel=label;
+    button.innerHTML='<span class="fraction"><b>'+number.format(numerator)+'</b><span>'+number.format(denominator)+'</span></span>';
+    button.onclick=()=>selectPiece(numerator*mission.whole/denominator,button);
+    return button;
+  }));
   act("idle");
-};
+  if(focus)title.focus({preventScroll:true});
+}
+next.onclick=()=>{stageIndex++;renderMission(true);};
+replay.onclick=()=>{renderMission();choiceGroup.firstElementChild.focus({preventScroll:true});};
+restart.onclick=()=>{stageIndex=0;renderMission(true);};
+renderMission();
 
 async function load() {
   const THREE = await import("three");

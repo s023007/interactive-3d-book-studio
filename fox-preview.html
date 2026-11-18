@@ -16,22 +16,18 @@
 <h1>الثعلب والربع الناقص</h1>
 <div id="stage"><canvas id="character" aria-label="ثعلب ثلاثي الأبعاد"></canvas><div id="reef-gate" class="reef-gate" aria-hidden="true"><span></span><span></span></div></div>
 <p id="status" role="status">جارٍ تحميل الثعلب…</p>
-<blockquote>«معنا نصف الصدفة. أي قطعة تكمل ثلاثة أرباع؟»</blockquote>
 <section class="mission" aria-labelledby="mission-title">
-<h2 id="mission-title">أكمل الصدفة لفتح البوابة</h2>
-<div class="shell-board" id="shell-board" role="img" aria-label="ربعان من أربعة">
-<i class="half first"></i><i class="half second"></i><i id="missing"></i><i></i>
-</div>
-<div class="choices" aria-label="قطع الصدفة" role="group">
-<button type="button" data-piece="1" aria-label="ربع"><span class="fraction"><b>١</b><span>٤</span></span></button>
-<button type="button" data-piece="2" aria-label="نصف"><span class="fraction"><b>١</b><span>٢</span></span></button>
-<button type="button" data-piece="3" aria-label="ثلاثة أرباع"><span class="fraction"><b>٣</b><span>٤</span></span></button>
-</div>
-<p id="feedback" role="status">انظر إلى الأرباع الأربعة، ثم اختر القطعة الناقصة.</p>
-<button id="replay" type="button" hidden>أعد المهمة</button>
+<nav class="gate-progress" aria-label="تقدّم رحلة المرجان"><ol id="gate-progress"></ol><button id="restart" type="button" hidden>ابدأ من جديد</button></nav>
+<h2 id="mission-title" tabindex="-1"></h2>
+<blockquote id="mission-line"></blockquote>
+<div class="shell-board" id="shell-board" role="img"></div>
+<div id="choices" class="choices" aria-label="قطع الصدفة" role="group"></div>
+<p id="feedback" role="status"></p>
+<div class="mission-actions"><button id="next-gate" type="button" hidden>البوابة التالية ←</button><button id="replay" type="button" hidden>أعد المهمة</button></div>
 </section>
 <details id="voice-tools"><summary>الصوت وحركة الثعلب</summary>
-<label for="recording">أرفق تسجيلًا عربيًا لهذه الجملة</label>
+<p class="note">جملة اختبار الصوت: «معنا نصف الصدفة. أي قطعة تكمل ثلاثة أرباع؟»</p>
+<label for="recording">أرفق تسجيلًا عربيًا للتجربة</label>
 <input id="recording" type="file" accept="audio/*">
 <div class="actions">
 <button id="speak" disabled>شغّل التسجيل</button>
