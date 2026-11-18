@@ -7,7 +7,7 @@
   <title>مغامرة ورّاق | عالم الرياضيات الناطق</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./play.css?v=0.4.0"><link rel="stylesheet" href="./play-arcade.css?v=0.5.0">
+  <link rel="stylesheet" href="./play.css?v=0.4.0"><link rel="stylesheet" href="./play-arcade.css?v=0.6.0">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js"}}</script>
 </head>
 <body>
@@ -63,15 +63,15 @@
 </div>
 <dialog id="voiceDialog" class="voice-dialog">
   <div class="voice-head"><strong>🎙️ صوت شخصية لُمى</strong><button id="closeVoice" aria-label="إغلاق إعدادات الصوت" class="xclose" type="button">×</button></div>
-  <p class="voice-intro">صوت الهاتف العادي يختلف عن أداء الممثلين في الألعاب. لإضافة صوت قصصي أكثر طبيعية، اربط خدمة صوت آمنة أو استخدم التسجيلات الصوتية.</p>
+  <p class="voice-intro">الصوت الطبيعي في ألعاب الشخصيات يكون مسجّلًا بأداء تمثيلي أو مولّدًا بخدمة صوت عالية الجودة. أرفق تسجيلًا لكل مشهد أو اربط خدمة صوت آمنة. صوت الهاتف خيار احتياطي فقط.</p>
   <label for="voiceMode">طريقة التشغيل</label>
-  <select id="voiceMode"><option value="device">صوت عربي من الجهاز</option><option value="studio">صوت استوديو احترافي (يتطلب تفعيل الخدمة)</option></select>
-  <div id="nativeOptions"><label for="nativeVoice">الصوت العربي المتاح في هاتفك</label><select id="nativeVoice"><option value="">تلقائي — أفضل صوت عربي متاح</option></select></div>
+  <select id="voiceMode"><option value="device">صوت عربي من الجهاز</option><option value="recorded">تسجيلات صوتية تمثيلية من جهازك</option><option value="studio">صوت استوديو احترافي (يتطلب تفعيل الخدمة)</option></select>
+  <div id="recordedOptions" hidden><label for="recordingFile">أرفق تسجيلًا صوتيًا طبيعيًا (MP3 أو WAV)</label><input id="recordingFile" type="file" accept="audio/*"><p class="voice-help">اختر التسجيل بحسب المشهد الحالي: مقدمة المغامرة، أو السؤال الحالي، أو رد الإجابة. يمكنك تسجيل صوت ممثل للشخصية بدل صوت الهاتف. الملفات تبقى على جهازك في هذه الجلسة.</p><button id="attachRecording" type="button" class="save-voice">ربط التسجيل بالمشهد الحالي</button><p id="recordingStatus" class="voice-status"></p></div><div id="nativeOptions"><label for="nativeVoice">الصوت العربي المتاح في هاتفك</label><select id="nativeVoice"><option value="">تلقائي — أفضل صوت عربي متاح</option></select></div>
   <div id="studioOptions" hidden><label for="voiceEndpoint">رابط خدمة الصوت الآمنة (HTTPS)</label><input id="voiceEndpoint" inputmode="url" placeholder="https://your-worker.workers.dev/speak"><label for="voiceCode">رمز وصول المعلّم (لا تضع مفتاح API)</label><input id="voiceCode" type="password" autocomplete="off" placeholder="رمز الوصول الخاص بالخدمة"><p class="voice-help">يتم إنشاء صوت عربي بتعبير تمثيلي عبر خادم منفصل. لا يُحفظ رمز الوصول في GitHub ولا في الموقع.</p></div>
   <label for="voicePace">سرعة صوت الجهاز <span id="voicePaceValue">٠٫٩٥</span></label><input id="voicePace" type="range" min=".8" max="1.12" step=".02" value=".95">
   <div class="voice-actions"><button id="voiceTest" class="listen" type="button">▶ استمع إلى العينة</button><button id="saveVoice" class="save-voice" type="button">حفظ الإعدادات</button></div>
   <p id="voiceStatus" class="voice-status" role="status"></p>
 </dialog>
-<script type="module" src="./play.js?v=0.5.0"></script>
+<script type="module" src="./play.js?v=0.6.0"></script>
 </body>
 </html>
