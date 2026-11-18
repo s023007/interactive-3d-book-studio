@@ -29,6 +29,21 @@ function guide(text){
  $('guideLine').textContent=text;
 }
 const voiceConfig={mode:'device',uri:'',pace:.95,endpoint:'',code:''};
+const recordedClips=new Map();
+let currentSceneKey='intro';
+function sceneKey(){return (state.pack?.id||$('pack').value)+':'+currentSceneKey}
+function playRecorded(key){
+ const blob=recordedClips.get(sceneKey());
+ if(!blob)return false;
+ clipUrl=URL.createObjectURL(blob);
+ const media=new Audio(clipUrl);currentClip=media;
+ media.onplay=()=>{if(key===voiceTurn)state.talking=true};
+ media.onended=()=>{if(key===voiceTurn)state.talking=false};
+ media.onerror=()=>{if(key===voiceTurn)state.talking=false};
+ media.play().catch(()=>{if(key===voiceTurn)state.talking=false});
+ return true;
+}
+
 let currentClip=null,clipUrl=null,voiceController=null;
 function refreshVoices(){
  const select=$('nativeVoice');
@@ -109,12 +124,14 @@ function speak(text){
  cancelVoice();
  if(state.muted)return;
  const key=voiceTurn;
- if(voiceConfig.mode==='studio')void studioTalk(text,key);
+ if(voiceConfig.mode==='recorded'){
+  if(!playRecorded(key)){$('recordingStatus').textContent='لا يوجد تسجيل لهذا المشهد. أرفق تسجيلًا أو اختر صوت الجهاز.';}
+ }else if(voiceConfig.mode==='studio')void studioTalk(text,key);
  else deviceTalk(text,key);
 }
 function readVoiceSettings(){
  try{const saved=JSON.parse(localStorage.getItem('warraq-game-voice-v1')||'{}');
-  voiceConfig.mode=saved.mode==='studio'?'studio':'device';
+  voiceConfig.mode=['studio','recorded'].includes(saved.mode)?saved.mode:'device';
   voiceConfig.uri=typeof saved.uri==='string'?saved.uri:'';
   voiceConfig.pace=Number(saved.pace)||.95;
   voiceConfig.endpoint=typeof saved.endpoint==='string'?saved.endpoint:'';
@@ -128,7 +145,9 @@ function readVoiceSettings(){
 function updateModeFields(){
  const studio=$('voiceMode').value==='studio';
  $('studioOptions').hidden=!studio;
- $('nativeOptions').hidden=studio;
+ const recorded=$('voiceMode').value==='recorded';
+ $('recordedOptions').hidden=!recorded;
+ $('nativeOptions').hidden=studio||recorded;
 }
 function saveVoiceSettings(){
  voiceConfig.mode=$('voiceMode').value;
@@ -182,13 +201,14 @@ function drawAnswers(q){
  const box=$('choices');box.replaceChildren();
  q.options.forEach((answer,i)=>{
   const button=document.createElement('button');
-  button.type='button';button.className='choice';button.textContent=answer;
+  button.type='button';button.className='choice';button.innerHTML=typesetMath(answer);button.setAttribute('aria-label',mathSpeech(answer));
   button.addEventListener('click',()=>answerQuestion(i));
   box.append(button);
  });
 }
 function currentQuestion(){return state.pack.questions[state.index]}
 function showQuestion(announce=false) {
+ currentSceneKey='question-'+state.index;
  state.revealed=false;state.tries=0;
  const q=currentQuestion();
  $('questionLead').textContent=q.lead;
@@ -225,6 +245,7 @@ function answerQuestion(index){
  const q=currentQuestion(),buttons=[...$('choices').children];
  if(buttons[index]?.disabled)return;
  if(index===q.correct){
+  currentSceneKey='correct-'+state.index;
   state.revealed=true;state.score++;updateScore();
   buttons.forEach((button,i)=>{button.disabled=true;if(i===q.correct)markButton(button,'correct')});
   $('feedback').textContent='ممتاز! '+q.explanation;
@@ -236,9 +257,11 @@ function answerQuestion(index){
   state.tries++;markButton(buttons[index],'incorrect');buttons[index].disabled=true;
   playNotes('try');
   if(state.tries===1){
+   currentSceneKey='hint-'+state.index;
    $('feedback').textContent='حاول مرة ثانية. '+q.hint;
    speak('اقتربت! إليك تلميحًا: '+q.hint);
   }else{
+   currentSceneKey='explain-'+state.index;
    state.revealed=true;
    buttons.forEach((button,i)=>{button.disabled=true;if(i===q.correct)markButton(button,'correct')});
    $('feedback').textContent='الإجابة الصحيحة: '+q.options[q.correct]+'. '+q.explanation;
@@ -266,6 +289,7 @@ function saveBest(packId,n){
  try{localStorage.setItem('warraq-play-best-'+packId,String(n))}catch{}
 }
 function finish(){
+ currentSceneKey='finish';
  if(stage)stage.setTheme('forest');
  $('worldName').textContent='غابة المكافآت';
  show('finishPanel');
@@ -280,20 +304,23 @@ function finish(){
  $('resultText').textContent=msg;speak(msg);if(state.score>0){celebrate();playNotes('success')}
 }
 function resetToStart(){
+ currentSceneKey='intro';
  cancelVoice();state.pack=null;state.score=0;updateScore();show('startPanel');
  setWorld(pickPack());if(stage)stage.setTheme('intro');guide('أهلًا بك! أنا لُمى. اختر صفك، ولنبدأ اللعب معًا.');
 }
-$('pack').onchange=()=>{const p=pickPack();setWorld(p);if(stage)stage.setTheme('intro');guide(p.welcome)};
+$('pack').onchange=()=>{currentSceneKey='intro';const p=pickPack();setWorld(p);if(stage)stage.setTheme('intro');guide(p.welcome)};
 $('start').onclick=startGame;
 $('next').onclick=nextQuestion;
 $('again').onclick=startGame;
 $('change').onclick=resetToStart;
 $('hint').onclick=()=>{
  if(state.revealed)return;
+ currentSceneKey='hint-'+state.index;
  const message='تلميح: '+currentQuestion().hint;
  $('feedback').textContent=message;speak(message);
 };
 $('repeat').onclick=()=>{
+ currentSceneKey='question-'+state.index;
  const q=currentQuestion();speak('استمع إلى السؤال مرة أخرى. '+q.lead+' '+mathSpeech(q.math));
 };
 $('listen').onclick=()=>speak(lastMsg||'أهلًا بك في وادي النجوم.');
@@ -302,8 +329,16 @@ $('mute').onclick=()=>setMuted(!state.muted);
 $('voiceSetup').onclick=()=>{$('voiceDialog').showModal();refreshVoices()};
 $('closeVoice').onclick=()=>$('voiceDialog').close();
 $('voiceMode').onchange=updateModeFields;
+$('attachRecording').onclick=()=>{
+ const file=$('recordingFile').files?.[0];
+ if(!file||!file.type.startsWith('audio/')){$('recordingStatus').textContent='اختر ملف صوت صالحًا أولًا.';return}
+ if(file.size>15*1024*1024){$('recordingStatus').textContent='حجم التسجيل أكبر من ١٥ ميجابايت.';return}
+ const key=sceneKey();recordedClips.set(key,file);
+ $('recordingStatus').textContent='تم ربط الصوت بالمشهد '+key+' في هذه الجلسة. اضغط استمع للتجربة.';
+ voiceConfig.mode='recorded';$('voiceMode').value='recorded';updateModeFields();
+};
 $('voicePace').oninput=()=>{$('voicePaceValue').textContent=ar(Number($('voicePace').value).toFixed(2))};
-$('voiceTest').onclick=()=>{saveVoiceSettings();speak('مرحبًا يا أبطال! أنا لُمى. هيا نلعب ونتعلم الرياضيات معًا!')};
+$('voiceTest').onclick=()=>{saveVoiceSettings();speak(lastMsg||'مرحبًا يا أبطال! أنا لُمى. هيا نلعب ونتعلم الرياضيات معًا!')};
 $('saveVoice').onclick=()=>{saveVoiceSettings();$('voiceDialog').close()};
 readVoiceSettings();
 if('speechSynthesis' in window)window.speechSynthesis.onvoiceschanged=refreshVoices;
