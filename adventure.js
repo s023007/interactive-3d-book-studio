@@ -1,11 +1,14 @@
 let THREE;
 import { PACKS } from "./game-data.js";
+import { createQuestObjects, animateQuestObjects } from "./quest-objects.js";
 
 const $=id=>document.getElementById(id), arab=n=>String(n).replace(/[0-9]/g,x=>"٠١٢٣٤٥٦٧٨٩"[+x]);
 const game=$("game");
 const state={scene:"intro",pack:null,index:0,score:0,tries:0,earned:[],finished:false,muted:false,speaking:false,voiceMode:"device",avatar:"mint",message:""};
 let world=null,micStream=null,mediaRecorder=null,clip=null,clipUrl=null,voiceId=0;
 const recordings=new Map();
+let voiceContext, voiceSource, voiceAnalyser, voiceSamples;
+let mouthLevel=.17, speechStarted=0;
 const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
 const story={
  intro:"مرحبًا أيها البطل! أنا لُمى، مرشدتك في ورّاق. هل أنت مستعد لمغامرة الرياضيات؟",
@@ -15,14 +18,14 @@ const story={
  map:"أكملت هذا الطريق بنجاح. اختر ما تريد اكتشافه بعد ذلك."
 };
 const clean=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-function mathHTML(text){
+function mathHTML(text,wrap=part=>part){
  const expression=clean(text);
  const fraction=(_,top,bottom)=>'<span class="math-frac" aria-label="'+top+' على '+bottom+'"><span class="top">'+top+'</span><span class="bottom">'+bottom+'</span></span>';
  const limit=expression.match(/^نها س ← ([٠-٩]+) : (.*)$/);
  if(limit){
   const [, target, formula]=limit;
   const tokens=formula.split(/([س])/).map(part=>part==="س"?'<bdi dir="rtl">س</bdi>':part).join("");
-  return '<span class="math-lim">نها<small dir="ltr"><bdi>س</bdi> → '+target+'</small></span><span class="math-expression">'+tokens+'</span>';
+  return wrap('<span class="math-lim">نها<small dir="ltr"><bdi>س</bdi> → '+target+'</small></span>',0)+wrap('<span class="math-expression">'+tokens+'</span>',1);
  }
  return expression.replace(/([٠-٩؟]+)⁄([٠-٩]+)/g,fraction);
 }
@@ -50,6 +53,7 @@ function recordKey(){
 }
 function haltSpeech(){
  voiceId++;state.speaking=false;window.speechSynthesis?.cancel();
+ voiceSource?.disconnect();voiceAnalyser?.disconnect();voiceSource=voiceAnalyser=null;
  if(clip){clip.pause();clip.removeAttribute("src");clip=null;}
  if(clipUrl){URL.revokeObjectURL(clipUrl);clipUrl=null;}
 }
@@ -65,7 +69,8 @@ function deviceVoice(text,id){
  if(!arabic||!window.SpeechSynthesisUtterance)return;
  const speech=new SpeechSynthesisUtterance(text);
  speech.voice=arabic;speech.lang=arabic.lang;speech.rate=.94;
- speech.onstart=()=>{if(id===voiceId)state.speaking=true;};
+ speech.onstart=()=>{if(id===voiceId){state.speaking=true;speechStarted=performance.now();}};
+ speech.onboundary=()=>{if(id===voiceId)speechStarted=performance.now();};
  speech.onend=()=>{if(id===voiceId)state.speaking=false;};
  speech.onerror=()=>{
   if(id!==voiceId)return;
@@ -73,6 +78,23 @@ function deviceVoice(text,id){
   $("audioSource").textContent="تعذّر تشغيل صوت الجهاز. يمكنك متابعة النص المكتوب.";
  };
  synth.speak(speech);
+}
+async function monitorRecording(element,id){
+ try {
+  const AudioContext=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContext)return;
+  voiceContext??=new AudioContext();
+  if(voiceContext.state!=="running")await voiceContext.resume();
+  if(id!==voiceId||voiceContext.state!=="running")return;
+  const analyser=voiceContext.createAnalyser();
+  analyser.fftSize=256;
+  voiceSource=voiceContext.createMediaElementSource(element);
+  voiceSource.connect(analyser).connect(voiceContext.destination);
+  voiceAnalyser=analyser;
+  voiceSamples=new Uint8Array(analyser.fftSize);
+ }catch{
+  // Native playback remains available when Web Audio is unavailable.
+ }
 }
 function speak(text,mode=state.voiceMode){
  voiceLabel(text);haltSpeech();
@@ -82,7 +104,9 @@ function speak(text,mode=state.voiceMode){
   clipUrl=URL.createObjectURL(file);
   clip=new Audio(clipUrl);
   $("audioSource").textContent="المصدر: التسجيل الذي أرفقته لهذه العبارة.";
-  clip.onplay=()=>{if(id===voiceId)state.speaking=true;};
+  clip.onplaying=()=>{if(id===voiceId){state.speaking=true;speechStarted=performance.now();}};
+  clip.onwaiting=()=>{if(id===voiceId)state.speaking=false;};
+  monitorRecording(clip,id);
   clip.onended=()=>{if(id===voiceId)haltSpeech();};
   const fallback=()=>{
    if(id!==voiceId)return;
@@ -124,16 +148,66 @@ function questionScript(){
  const q=state.pack.questions[state.index];
  return q.lead+" "+sayMath(q.math);
 }
+function presentEquation(q) {
+ const equation=$("equation");
+ const piece=(part,index)=>`<span class="math-piece" style="--step:${index}">${part}</span>`;
+ equation.innerHTML=state.pack.id==="fractions"
+  ? q.math.split(" ").map((part,index)=>piece(mathHTML(part),index)).join("")
+  : mathHTML(q.math,piece);
+ if(q.id==="f3"){
+  const blank=equation.querySelector(".math-piece:last-child .top");
+  blank.classList.add("drop-slot");
+ }
+ equation.setAttribute("aria-label",sayMath(q.math));
+}
+function enableFractionDrag(button,index) {
+ button.classList.add("can-drag");
+ let start,ghost,skipClick=false;
+ function end(event,commit) {
+  if(!start||event.pointerId!==start.id)return;
+  const target=$("equation").querySelector(".drop-slot");
+  const hit=target&&document.elementFromPoint(event.clientX,event.clientY)?.closest(".math-piece")===target.closest(".math-piece");
+  const dragged=Boolean(ghost);
+  ghost?.remove();ghost=null;start=null;
+  target?.classList.remove("active");
+  if(dragged){
+   skipClick=true;
+   if(commit&&hit)answer(index);
+  }
+ }
+ button.addEventListener("pointerdown",event=>{
+  if(!event.isPrimary||event.button!==0)return;
+  skipClick=false;
+  start={id:event.pointerId,x:event.clientX,y:event.clientY};
+  button.setPointerCapture(event.pointerId);
+ });
+ button.addEventListener("pointermove",event=>{
+  if(!start||event.pointerId!==start.id)return;
+  if(!ghost&&Math.hypot(event.clientX-start.x,event.clientY-start.y)<8)return;
+  if(!ghost){
+   ghost=document.createElement("span");
+   ghost.className="drag-ghost";ghost.setAttribute("aria-hidden","true");
+   ghost.textContent=button.textContent;document.body.append(ghost);
+   $("equation").querySelector(".drop-slot")?.classList.add("active");
+  }
+  ghost.style.left=event.clientX+"px";ghost.style.top=event.clientY+"px";
+ });
+ button.addEventListener("pointerup",event=>end(event,true));
+ button.addEventListener("lostpointercapture",event=>end(event,false));
+ button.addEventListener("pointercancel",event=>end(event,false));
+ button.onclick=event=>{if(event.detail===0||!skipClick)answer(index);skipClick=false;};
+}
 function buildQuestion(){
  const q=state.pack.questions[state.index];state.tries=0;state.finished=false;
  $("qProgress").textContent="التحدّي "+arab(state.index+1)+" من "+arab(state.pack.questions.length);
  $("progress").style.width=((state.index+1)/state.pack.questions.length*100)+"%";
- $("lead").textContent=q.lead;$("equation").innerHTML=mathHTML(q.math);$("equation").setAttribute("aria-label",sayMath(q.math));
+ $("lead").textContent=q.lead;presentEquation(q);
+ $("choicePrompt").textContent=q.id==="f3"?"المس السمكة أو اسحب العدد إلى البسط.":state.pack.id==="fractions"?"المس السمكة التي تحمل إجابتك.":"المس الكوكب الذي يحمل إجابتك.";
  $("bubble").textContent="أنصت إلى السؤال، وفكّر قبل الإجابة!";
  $("response").textContent="";$("next").hidden=true;$("hint").disabled=false;
  const box=$("answers");box.replaceChildren();
  q.options.forEach((text,i)=>{
-  const b=document.createElement("button");b.type="button";b.className="answer";b.innerHTML=mathHTML(text);b.setAttribute("aria-label",sayMath(text));b.onclick=()=>answer(i);box.append(b);
+  const b=document.createElement("button");b.type="button";b.className="answer";b.innerHTML='<span class="answer-label">'+mathHTML(text)+'</span>';b.setAttribute("aria-label",sayMath(text));b.onclick=()=>answer(i);if(q.id==="f3")enableFractionDrag(b,i);box.append(b);
  });
  if(world)world.questionObjects(q);
 }
@@ -146,12 +220,14 @@ function answer(i){
   buttons.forEach((b,j)=>{b.disabled=true;if(j===q.correct)b.classList.add("correct")});
   $("response").textContent="إجابة صحيحة! "+q.explanation;
   $("next").textContent="استلم نجمتك ←";$("next").hidden=false;$("hint").disabled=true;
-  if(world)world.react(true);
+  world?.react(true);world?.reactToChoice(i,true);world?.showModels(true);
+  const blank=$("equation").querySelector(".drop-slot");
+  if(blank){blank.textContent=q.options[i];$("equation").setAttribute("aria-label",sayMath(q.math.replace("؟",q.options[i])));}
   speak(story.correct[state.index%story.correct.length]+" "+q.explanation);
   $("next").focus({preventScroll:true});
  }else{
   buttons[i].disabled=true;buttons[i].classList.add("wrong");state.tries++;
-  if(world)world.react(false);
+  world?.react(false);world?.reactToChoice(i,false);world?.showModels(false);
   if(state.tries===1){$("response").textContent="اقتربت! "+q.hint;speak(story.retry+" "+q.hint)}
   else{
    state.finished=true;buttons.forEach((b,j)=>{b.disabled=true;if(j===q.correct)b.classList.add("correct")});
@@ -187,7 +263,7 @@ function chooseColor(key){
 
 $("begin").onclick=beginGrade;
 document.querySelectorAll("[data-pack]").forEach(b=>b.onclick=()=>startQuest(b.dataset.pack));
-$("hint").onclick=()=>{if(state.finished)return;world?.react(false);const q=state.pack.questions[state.index];speak("تلميح: "+q.hint);$("response").textContent=q.hint};
+$("hint").onclick=()=>{if(state.finished)return;world?.react(false);world?.showModels(false);const q=state.pack.questions[state.index];speak("تلميح: "+q.hint);$("response").textContent=q.hint};
 $("sayQuestion").onclick=()=>{if(state.pack){const q=state.pack.questions[state.index];speak(q.lead+" "+sayMath(q.math))}};
 $("questBack").onclick=beginGrade;
 $("avatarBack").onclick=finish;
@@ -276,26 +352,6 @@ const addBall=(parent,r,x,y,z,m,s=[1,1,1])=>{const o=new THREE.Mesh(new THREE.Sp
 const addBox=(p,w,h,d,x,y,z,m)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);p.add(o);return o};
 const addCyl=(p,rTop,rBottom,h,x,y,z,m,n=12)=>{const o=new THREE.Mesh(new THREE.CylinderGeometry(rTop,rBottom,h,n),m);o.position.set(x,y,z);p.add(o);return o};
 const addCone=(p,r,h,x,y,z,m,n=10)=>{const o=new THREE.Mesh(new THREE.ConeGeometry(r,h,n),m);o.position.set(x,y,z);p.add(o);return o};
-function canvasLabel(text,fg="#243f75",bg="#fff5d5",width=320){
- const c=document.createElement("canvas");c.width=width;c.height=145;const ctx=c.getContext("2d");
- ctx.fillStyle=bg;ctx.beginPath();ctx.roundRect(6,6,c.width-12,c.height-12,24);ctx.fill();
- ctx.strokeStyle="#ffffff";ctx.lineWidth=7;ctx.stroke();
- ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=fg;
- let size=54;if(text.length>14)size=30;else if(text.length>8)size=39;
- const fraction=text.match(/^([٠-٩]+)⁄([٠-٩]+)$/);
- if(fraction){
-  ctx.font="900 48px Tahoma, Arial";
-  ctx.fillText(fraction[1],c.width/2,43);
-  ctx.fillRect(c.width/2-28,70,56,5);
-  ctx.fillText(fraction[2],c.width/2,105);
- }else{
-  ctx.font=`900 ${size}px Tahoma, Arial`;
-  ctx.fillText(text,c.width/2,c.height/2,c.width-18);
- }
- const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
- const m=new THREE.MeshBasicMaterial({map:t,transparent:true,side:THREE.DoubleSide});
- return new THREE.Mesh(new THREE.PlaneGeometry(2.0,.90),m);
-}
 class AdventureWorld{
  constructor(){
   this.canvas=$("stage3d");this.renderer=new THREE.WebGLRenderer({canvas:this.canvas,alpha:true,antialias:true,powerPreference:"low-power"});
@@ -306,7 +362,7 @@ class AdventureWorld{
   this.environment=new THREE.Group();this.scene.add(this.environment);
   this.hero=new THREE.Group();this.scene.add(this.hero);
   this.tokens=new THREE.Group();this.scene.add(this.tokens);
-  this.motion=[];this.time=0;this.last=0;this.reaction=0;this.arms=[];this.eyes=[];this.aim=new THREE.Vector3();
+  this.motion=[];this.anchorPoint=new THREE.Vector3();this.anchorRay=new THREE.Vector3();this.last=0;this.reaction=0;this.arms=[];this.eyes=[];this.aim=new THREE.Vector3();
   this.makeActor();
   this.canvas.addEventListener("webglcontextlost", event=>{event.preventDefault();cancelAnimationFrame(this.frame);showSceneFallback();});
   this.canvas.addEventListener("webglcontextrestored", ()=>{this.resize();this.frame=requestAnimationFrame(this.tick);$("sceneError").hidden=true;game.classList.remove("no-webgl");});
@@ -347,7 +403,7 @@ class AdventureWorld{
  clear(group){group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{m.map?.dispose();m.dispose()})});group.clear()}
  sceneChange(scene,theme){
   if(this.currentScene===scene&&this.theme===theme)return;
-  this.clear(this.environment);this.clear(this.tokens);this.motion=[];this.theme=theme;this.currentScene=scene;this.transition=performance.now();
+  this.clear(this.environment);this.clear(this.tokens);this.questObjects=null;this.motion=[];this.theme=theme;this.currentScene=scene;this.transition=performance.now();
   const e=this.environment;const m=mat;
   this.hero.visible=true;this.hero.scale.setScalar(1);
   if(scene==="intro"){
@@ -376,7 +432,11 @@ class AdventureWorld{
   }else if((scene==="quest"||scene==="reward") && theme==="limits"){
    const ground=m(0x323c83),planet=m(0x977ee0),light=m(0xffb9dc);
    addCyl(e,7.1,7.0,.7,0,-1.38,-1.8,ground,48);
-   addCyl(e,7.1,7.1,.12,0,-.98,-1.8,light,48);
+   addCyl(e,7.1,7.1,.12,0,-.98,-1.8,m(0x353f6a),48);
+   for(let i=0;i<3;i++){
+    const track=new THREE.Mesh(new THREE.TorusGeometry(1.75+i*1.8,.025,6,56),m(0x7783bb));
+    track.rotation.x=Math.PI/2;track.position.set(0,-.9,-1.8);e.add(track);
+   }
    const dome=new THREE.Mesh(new THREE.TorusGeometry(2.1,.045,8,52),m(0xc5a9ff,.5,{emissive:0x6531b5,emissiveIntensity:.6}));
    dome.position.set(2,2.4,-5);e.add(dome);
    const ring=dome.clone();ring.rotation.y=1;ring.rotation.z=.8;e.add(ring);
@@ -389,7 +449,7 @@ class AdventureWorld{
    }
    this.hero.position.set(-2.45,-.03,2.65);this.hero.scale.setScalar(.85);
   }else if(scene==="quest"||scene==="reward"){
-   const sand=m(0xe9c881),shell=m(0xec9b89),kelp=m(0x1b9a8c),seawall=m(0x1b81bb);
+   const sand=m(0x6ca0a1),shell=m(0xec9b89),kelp=m(0x1b9a8c);
    addCyl(e,7.3,6.7,.83,0,-1.46,-1.8,sand,48);
    const reef=m(0xf58991,.85);
    for(const x of [-4.7,3.7,5]){
@@ -439,21 +499,51 @@ class AdventureWorld{
   this.resize();
  }
  questionObjects(q){
-  this.motion=this.motion.filter(item=>item.o.parent!==this.tokens);
   this.clear(this.tokens);
-  if(state.scene!=="quest")return;
-  const g=this.tokens,strings=q.math.match(/[٠-٩]+(?:⁄[٠-٩]+)?/g)||[];
-  const parts=state.pack.id==="limits"?[strings[0]]:strings.filter(value=>value.includes("⁄")).slice(0,2);
-  const positions=[.6,1.85];const props=mat(0x6cce8d),blue=mat(0x98bbea);
-  parts.forEach((txt,i)=>{
-   const node=new THREE.Group();node.position.set(positions[i],-.5,i*.25);g.add(node);
-   addBall(node,.52,0,.2,0,i%2?blue:props,[.85,.9,.7]);
-   addBall(node,.11,-.18,.35,.40,new THREE.MeshBasicMaterial({color:0xffffff}));
-   addBall(node,.11,.18,.35,.40,new THREE.MeshBasicMaterial({color:0xffffff}));
-   addBall(node,.05,-.18,.35,.50,mat(0x213a5d));addBall(node,.05,.18,.35,.50,mat(0x213a5d));
-   const label=canvasLabel(txt);label.position.set(0,.04,.55);label.scale.set(.68,.69,1);node.add(label);
-   this.motion.push({o:node,y:node.position.y,s:i*.85,t:0});
+  this.questObjects=createQuestObjects(THREE,state.pack.id,q,this.tokens);
+  this.questStarted=performance.now();
+  this.measureQuest();
+ }
+ measureQuest(){
+  if(!this.questObjects)return;
+  this.questBounds={canvas:this.canvas.getBoundingClientRect(),screen:$("quest").getBoundingClientRect(),
+   demo:$("worldDemo").getBoundingClientRect(),equation:$("equation").getBoundingClientRect(),
+   choices:[...$("answers").children].map(button=>button.getBoundingClientRect())};
+ }
+ anchor(group,x,y,z,pixelSize){
+  const {canvas}=this.questBounds;
+  this.anchorPoint.set((x-canvas.left)/canvas.width*2-1,1-(y-canvas.top)/canvas.height*2,.5).unproject(this.camera);
+  const ray=this.anchorRay.copy(this.anchorPoint).sub(this.camera.position);
+  group.position.copy(this.camera.position).addScaledVector(ray,(z-this.camera.position.z)/ray.z);
+  group.quaternion.copy(this.camera.quaternion);
+  const height=2*(this.camera.position.z-z)*Math.tan(THREE.MathUtils.degToRad(this.camera.fov/2));
+  group.scale.setScalar(pixelSize*height/canvas.height);
+ }
+ renderQuest(seconds){
+  const objects=this.questObjects;
+  if(!objects)return;
+  const {choices,demo,equation,screen}=this.questBounds;
+  this.camera.updateMatrixWorld();
+  this.anchor(this.hero,screen.left+screen.width*.26,demo.bottom-8,2.1,Math.min(screen.width*.124,54));
+  this.anchor(objects.demo,demo.left+demo.width*.5,demo.top+demo.height*.50,1.8,Math.min(demo.width*.35,61));
+  this.anchor(objects.equation,equation.left+equation.width*.5,equation.bottom-6,2.4,Math.min(equation.width*.145,59));
+  const elapsed=seconds-this.questStarted/1000;
+  objects.equation.children.forEach((tile,index)=>{
+   tile.scale.setScalar(reduced?1:THREE.MathUtils.clamp((elapsed-index*.075)*5,.001,1));
   });
+  objects.carriers.forEach(({anchor},index)=>{
+   const rect=choices[index];
+   this.anchor(anchor,rect.left+rect.width*.5,rect.top+rect.height*.36,2.6,Math.min(rect.width*.51,rect.height*.34,46));
+  });
+  animateQuestObjects(objects,seconds,reduced);
+ }
+ showModels(answered){this.questObjects?.showModels(answered);}
+ reactToChoice(index,correct){
+  const item=this.questObjects?.carriers[index];
+  if(!item)return;
+  item.result=correct;item.reactedAt=performance.now()/1000;
+  item.halo.visible=true;
+  item.halo.material.color.setHex(correct?0xebff7c:0xff849c);
  }
  setAvatar(hex){this.body.material.color.set(hex)}
  react(correct){this.reaction=performance.now()+1000;this.isCorrect=correct}
@@ -464,12 +554,23 @@ class AdventureWorld{
   this.camera.position.set(0,quest?1.25:2.3,quest?8.8:11);
   this.aim.set(0,quest?.45:1.25,0);
   this.camera.lookAt(this.aim);this.camera.updateProjectionMatrix();
+  this.measureQuest();
  }
  tick(t){
   this.frame=requestAnimationFrame(this.tick);
   if(document.hidden||(this.last&&t-this.last<33))return;this.last=t;
-  const seconds=t/1000,amp=state.speaking?(0.35+Math.abs(Math.sin(seconds*13))*.55):.17;
-  this.mouth.scale.y=reduced?.17:amp;
+  const seconds=t/1000;
+  let mouthTarget=.17;
+  if(state.speaking&&voiceAnalyser&&voiceContext.state==="running"){
+   voiceAnalyser.getByteTimeDomainData(voiceSamples);
+   const energy=voiceSamples.reduce((sum,sample)=>sum+((sample-128)/128)**2,0);
+   mouthTarget+=Math.min(.8,Math.sqrt(energy/voiceSamples.length)*4.5);
+  }else if(state.speaking){
+   // Browser TTS exposes utterance/word events, but no audio waveform.
+   mouthTarget+=Math.abs(Math.sin((t-speechStarted)*.024))*.52;
+  }
+  mouthLevel+=(mouthTarget-mouthLevel)*.62;
+  this.mouth.scale.y=reduced?.17:mouthLevel;
   if(!reduced){
    const pulse=Math.max(0,(this.reaction-t)/1000);
    const gesture=state.speaking ? Math.sin(seconds*4)*.24 : 0;
@@ -492,6 +593,7 @@ class AdventureWorld{
    this.camera.position.x=offset*offset*.42;
    this.camera.lookAt(this.aim);
   }
+  if(this.currentScene==="quest")this.renderQuest(seconds);
   this.renderer.render(this.scene,this.camera);
  }
  dispose(){cancelAnimationFrame(this.frame);this.resizer.disconnect();this.clear(this.environment);this.clear(this.tokens);this.clear(this.hero);this.renderer.dispose()}

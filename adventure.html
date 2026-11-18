@@ -6,7 +6,7 @@
 <title>مغامرة ورّاق | عالم الرياضيات الحي</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./adventure.css?v=0.8.0">
+<link rel="stylesheet" href="./adventure.css?v=0.9.0">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js"}}</script>
 </head>
 <body>
@@ -33,7 +33,13 @@
  <div id="quest" class="screen quest-screen" hidden>
   <div class="question-top"><span id="qProgress">التحدّي ١ من ٣</span><div class="progress"><span id="progress"></span></div></div>
   <div class="scene-narrator"><span class="narrator-head">لُمى تقول ✦</span><p id="bubble" aria-live="polite">مستعد للسؤال؟</p><button id="sayQuestion" class="narrator-voice" aria-label="إعادة سماع السؤال">🔈</button></div>
-  <div class="question-dock"><div class="question-tag">لوحة لُمى</div><p id="lead" class="lead">اختر الإجابة الصحيحة.</p><div id="equation" class="equation" aria-live="polite"></div><div id="answers" class="answers"></div><div id="response" class="response" role="status" aria-live="polite"></div><div class="lower-actions"><button id="questBack" class="hint-btn">العوالم</button><button id="hint" class="hint-btn">💡 تلميح</button><button id="next" class="next-btn" hidden>السؤال التالي ←</button></div></div>
+  <div id="worldDemo" class="world-demo" aria-hidden="true"></div>
+  <p id="lead" class="lead"></p>
+  <div id="equation" class="equation" aria-live="polite"></div>
+  <p id="choicePrompt" class="choice-prompt"></p>
+  <div id="answers" class="answers" role="group" aria-label="خيارات الإجابة"></div>
+  <div id="response" class="response" role="status" aria-live="polite"></div>
+  <div class="lower-actions"><button id="questBack" class="hint-btn">العوالم</button><button id="hint" class="hint-btn">تلميح</button><button id="next" class="next-btn" hidden>تابع ←</button></div>
  </div>
  <div id="reward" class="screen reward-screen" hidden><div class="reward-hero"><div class="reward-emblem">🌟</div><h1 id="rewardTitle">أحسنت!</h1><p id="rewardText">لقد حصلت على نجمة جديدة!</p><div class="reward-buttons"><button id="continue" class="big-green">أكمل المغامرة ←</button></div></div></div>
  <div id="map" class="screen map-screen" hidden><div class="world-board map-board"><div class="board-badge">مغامرتك مستمرة</div><h1>خريطة النجوم</h1><p id="mapMessage">هذه رحلتك في عالم الرياضيات.</p><div class="trail" id="trail"></div><div class="score-final"><span>🌟 مجموع النجوم</span><strong id="scoreFinal">٠</strong></div><div class="map-actions"><button id="customize" class="big-green">خصّص شخصيتك 🎨</button><button id="replay" class="soft-action">إعادة المغامرة</button><button id="chooseGrade" class="soft-action">اختر صفًا آخر</button></div></div></div>
@@ -51,5 +57,5 @@
  <div class="voice-bottom"><button id="testVoice" type="button" class="soft-action">▶ جرّب الصوت</button><button id="saveVoice" class="big-green" type="button">حفظ</button></div>
  </dialog>
  <footer class="foot">تجربة ورّاق ٠٫٨ — شخصيات وعوالم أصلية، وأسئلة تجريبية لا تمثل كتابًا بعينه.</footer>
-<script type="module" src="./adventure.js?v=0.8.0"></script>
+<script type="module" src="./adventure.js?v=0.9.0"></script>
 </body></html>
