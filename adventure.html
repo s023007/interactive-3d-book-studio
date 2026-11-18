@@ -6,7 +6,7 @@
 <title>مغامرة ورّاق | عالم الرياضيات الحي</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./adventure.css?v=0.9.0">
+<link rel="stylesheet" href="./adventure.css?v=0.10.0">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js"}}</script>
 </head>
 <body>
@@ -33,6 +33,7 @@
  <div id="quest" class="screen quest-screen" hidden>
   <div class="question-top"><span id="qProgress">التحدّي ١ من ٣</span><div class="progress"><span id="progress"></span></div></div>
   <div class="scene-narrator"><span class="narrator-head">لُمى تقول ✦</span><p id="bubble" aria-live="polite">مستعد للسؤال؟</p><button id="sayQuestion" class="narrator-voice" aria-label="إعادة سماع السؤال">🔈</button></div>
+  <button id="guideReplay" class="guide-replay" type="button" aria-label="اطلب من لُمى إعادة تقديم السؤال"><span>اسأل لُمى</span></button>
   <div id="worldDemo" class="world-demo" aria-hidden="true"></div>
   <p id="lead" class="lead"></p>
   <div id="equation" class="equation" aria-live="polite"></div>
@@ -49,13 +50,13 @@
 </main>
 <dialog id="voiceDialog" class="voice-modal" aria-labelledby="voiceTitle">
  <div class="voice-top"><strong id="voiceTitle">🎙️ صوت لُمى</strong><button id="closeVoice" type="button" aria-label="إغلاق">×</button></div>
- <p>يمكنك تسجيل نص لُمى بصوت بشري أو إرفاق تسجيل مصرح باستخدامه. عند غياب التسجيل، يقرأ صوت الجهاز النص بصوت اصطناعي إذا توفّر صوت عربي.</p>
- <p id="audioSource" role="status"></p><blockquote id="voiceScript"></blockquote><div class="voice-choice"><label><input type="radio" name="voiceMode" value="recorded"> تسجيلات بشرية للمشاهد</label><label><input type="radio" name="voiceMode" value="device" checked> صوت الجهاز العربي (احتياطي)</label></div>
+ <p>يمكنك تسجيل نص لُمى بصوت بشري أو إرفاق تسجيل مصرح باستخدامه. تعرض لُمى النص عند غياب التسجيل. يمكنك اختيار نطق الجهاز الاصطناعي إذا توفّر صوت عربي.</p>
+ <p id="audioSource" role="status"></p><blockquote id="voiceScript"></blockquote><div class="voice-choice"><label><input type="radio" name="voiceMode" value="recorded" checked> تسجيل بشري أو نص مكتوب</label><label><input type="radio" name="voiceMode" value="device"> صوت الجهاز الاصطناعي</label></div>
  <label for="voiceFile">اربط ملفًا صوتيًا بالمشهد المعروض</label><input id="voiceFile" type="file" accept="audio/*">
  <div class="record-row"><button id="record" type="button">🎤 تسجيل صوت الآن</button><button id="stopRecord" type="button" disabled>■ إيقاف التسجيل</button></div>
  <p id="voiceNote">سيُحفظ التسجيل مؤقتًا في هذه الجلسة فقط. لا تنسَ السماح بالميكروفون عند التسجيل.</p>
  <div class="voice-bottom"><button id="testVoice" type="button" class="soft-action">▶ جرّب الصوت</button><button id="saveVoice" class="big-green" type="button">حفظ</button></div>
  </dialog>
  <footer class="foot">تجربة ورّاق ٠٫٨ — شخصيات وعوالم أصلية، وأسئلة تجريبية لا تمثل كتابًا بعينه.</footer>
-<script type="module" src="./adventure.js?v=0.9.0"></script>
+<script type="module" src="./adventure.js?v=0.10.0"></script>
 </body></html>

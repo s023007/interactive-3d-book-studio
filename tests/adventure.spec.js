@@ -8,6 +8,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function capture(page, testInfo, name) {
+  await page.locator('.answer-label').evaluateAll(labels => Promise.all(labels.flatMap(label => label.getAnimations().map(animation => animation.finished.catch(() => {})))));
   const path = testInfo.outputPath(name + '.png');
   await page.screenshot({ path, animations: 'disabled' });
   await testInfo.attach(name, { path, contentType: 'image/png' });
@@ -163,6 +164,9 @@ test('uses a recording only for its attached line and keeps captions without Ara
   await expect(page.locator('#bubble')).toContainText('نهاية الدالة');
   await page.locator('#audioSettings').click();
   await page.locator('#testVoice').click();
+  await expect(page.locator('#audioSource')).toContainText('لا يوجد تسجيل بشري');
+  await page.locator('[name=voiceMode][value=device]').check();
+  await page.locator('#testVoice').click();
   await expect(page.locator('#audioSource')).toContainText('لا يتوفّر صوت عربي');
 });
 
@@ -203,4 +207,20 @@ test.describe('numerator on touch screen',()=>{
     await page.locator('#continue').click();
     await expect(page.locator('#scoreFinal')).toHaveText('٣');
   });
+});
+
+test('Luma presents, guides and celebrates even without audio', async ({ page }) => {
+  await page.goto('/adventure.html');
+  await page.locator('#begin').click();
+  await page.locator('[data-pack=fractions]').click();
+  const game=page.locator('#game');
+  await expect(game).toHaveAttribute('data-guide-cue','present');
+  await page.locator('#hint').click();
+  await expect(game).toHaveAttribute('data-guide-cue','nudge');
+  await page.locator('#guideReplay').click();
+  await expect(game).toHaveAttribute('data-guide-cue','present');
+  await expect(page.locator('#bubble')).toContainText('اجمع الكسرين');
+  await page.locator('.answer').nth(1).click();
+  await expect(game).toHaveAttribute('data-guide-cue','celebrate');
+  await expect(page.locator('#response')).toContainText('إجابة صحيحة');
 });

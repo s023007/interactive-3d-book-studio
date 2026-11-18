@@ -191,3 +191,24 @@ body{background:#19194e}
 }
 .quest-screen .answer.correct::after { content: "✓" / ""; background: #dcef9a; }
 .quest-screen .answer.wrong::after { content: "×" / ""; background: #ffb4a7; }
+
+/* Luma presents the equation first, then summons the answer carriers. */
+.quest-screen .math-piece { animation-delay: calc(.34s + var(--step) * .12s); }
+.quest-screen .answer-label { animation: arrive .32s both; animation-delay: calc(.69s + var(--choice) * .08s); }
+.quest-screen .answer:is(:focus-visible,:active) .answer-label { animation: none; }
+.no-webgl .quest-screen :is(.math-piece,.answer-label) { animation: none; }
+.guide-replay {
+  grid-row: 2; grid-column: 2; align-self: end; justify-self: center;
+  width: min(95%,156px); height: min(74%,190px); min-height: 44px;
+  border: 0; border-radius: 42%; padding: 0;
+  display: flex; align-items: end; justify-content: center;
+  background: transparent; color: #e8fffb;
+}
+.guide-replay span {
+  background: #092639; border: 1px solid #80e3cf; border-radius: 18px;
+  padding: 3px 9px; font-size: 11px; font-weight: 800;
+}
+.no-webgl .guide-replay { height: 44px; }
+.quest-screen .scene-narrator { border-start-end-radius: 3px; }
+.game[data-guide-cue="nudge"] .narrator-head { color: #ffe2a1; }
+.game[data-guide-cue="celebrate"] .narrator-head { color: #eaff8a; }

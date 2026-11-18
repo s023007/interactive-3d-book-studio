@@ -4,7 +4,7 @@ import { createQuestObjects, animateQuestObjects } from "./quest-objects.js";
 
 const $=id=>document.getElementById(id), arab=n=>String(n).replace(/[0-9]/g,x=>"٠١٢٣٤٥٦٧٨٩"[+x]);
 const game=$("game");
-const state={scene:"intro",pack:null,index:0,score:0,tries:0,earned:[],finished:false,muted:false,speaking:false,voiceMode:"device",avatar:"mint",message:""};
+const state={scene:"intro",pack:null,index:0,score:0,tries:0,earned:[],finished:false,muted:false,speaking:false,voiceMode:"recorded",avatar:"mint",message:""};
 let world=null,micStream=null,mediaRecorder=null,clip=null,clipUrl=null,voiceId=0;
 const recordings=new Map();
 let voiceContext, voiceSource, voiceAnalyser, voiceSamples;
@@ -110,12 +110,13 @@ function speak(text,mode=state.voiceMode){
   clip.onended=()=>{if(id===voiceId)haltSpeech();};
   const fallback=()=>{
    if(id!==voiceId)return;
-   haltSpeech();deviceVoice(text,voiceId);
+   haltSpeech();$("audioSource").textContent="تعذّر تشغيل التسجيل. يمكنك متابعة النص المكتوب.";
   };
   clip.onerror=fallback;clip.play().catch(fallback);
   return;
  }
- deviceVoice(text,id);
+ if(mode==="device")deviceVoice(text,id);
+ else $("audioSource").textContent="لا يوجد تسجيل بشري لهذه العبارة. يمكنك متابعة النص المكتوب.";
 }
 function setMute(flag){
  state.muted=flag;
@@ -207,8 +208,9 @@ function buildQuestion(){
  $("response").textContent="";$("next").hidden=true;$("hint").disabled=false;
  const box=$("answers");box.replaceChildren();
  q.options.forEach((text,i)=>{
-  const b=document.createElement("button");b.type="button";b.className="answer";b.innerHTML='<span class="answer-label">'+mathHTML(text)+'</span>';b.setAttribute("aria-label",sayMath(text));b.onclick=()=>answer(i);if(q.id==="f3")enableFractionDrag(b,i);box.append(b);
+  const b=document.createElement("button");b.type="button";b.className="answer";b.style.setProperty("--choice",i);b.innerHTML='<span class="answer-label">'+mathHTML(text)+'</span>';b.setAttribute("aria-label",sayMath(text));b.onclick=()=>answer(i);if(q.id==="f3")enableFractionDrag(b,i);box.append(b);
  });
+ guideCue("present");
  if(world)world.questionObjects(q);
 }
 function answer(i){
@@ -220,6 +222,7 @@ function answer(i){
   buttons.forEach((b,j)=>{b.disabled=true;if(j===q.correct)b.classList.add("correct")});
   $("response").textContent="إجابة صحيحة! "+q.explanation;
   $("next").textContent="استلم نجمتك ←";$("next").hidden=false;$("hint").disabled=true;
+  guideCue("celebrate");
   world?.react(true);world?.reactToChoice(i,true);world?.showModels(true);
   const blank=$("equation").querySelector(".drop-slot");
   if(blank){blank.textContent=q.options[i];$("equation").setAttribute("aria-label",sayMath(q.math.replace("؟",q.options[i])));}
@@ -227,6 +230,7 @@ function answer(i){
   $("next").focus({preventScroll:true});
  }else{
   buttons[i].disabled=true;buttons[i].classList.add("wrong");state.tries++;
+  guideCue("nudge");
   world?.react(false);world?.reactToChoice(i,false);world?.showModels(false);
   if(state.tries===1){$("response").textContent="اقتربت! "+q.hint;speak(story.retry+" "+q.hint)}
   else{
@@ -263,8 +267,23 @@ function chooseColor(key){
 
 $("begin").onclick=beginGrade;
 document.querySelectorAll("[data-pack]").forEach(b=>b.onclick=()=>startQuest(b.dataset.pack));
-$("hint").onclick=()=>{if(state.finished)return;world?.react(false);world?.showModels(false);const q=state.pack.questions[state.index];speak("تلميح: "+q.hint);$("response").textContent=q.hint};
-$("sayQuestion").onclick=()=>{if(state.pack){const q=state.pack.questions[state.index];speak(q.lead+" "+sayMath(q.math))}};
+$("hint").onclick=()=>{if(state.finished)return;guideCue("nudge");world?.react(false);world?.showModels(false);const q=state.pack.questions[state.index];speak("تلميح: "+q.hint);$("response").textContent=q.hint};
+function guideCue(cue){
+ game.dataset.guideCue=cue;
+ world?.cueGuide(cue);
+}
+function replayPresentation(){
+ if(!state.pack||state.scene!=="quest")return;
+ guideCue(state.finished?"explain":"present");
+ if(!state.finished){
+  for(const item of $("equation").children){
+   for(const animation of item.getAnimations()){animation.cancel();animation.play();}
+  }
+ }
+ speak(questionScript());
+}
+$("sayQuestion").onclick=replayPresentation;
+$("guideReplay").onclick=replayPresentation;
 $("questBack").onclick=beginGrade;
 $("avatarBack").onclick=finish;
 $("next").onclick=()=>{
@@ -501,7 +520,7 @@ class AdventureWorld{
  questionObjects(q){
   this.clear(this.tokens);
   this.questObjects=createQuestObjects(THREE,state.pack.id,q,this.tokens);
-  this.questStarted=performance.now();
+  this.cueGuide("present");
   this.measureQuest();
  }
  measureQuest(){
@@ -519,21 +538,39 @@ class AdventureWorld{
   const height=2*(this.camera.position.z-z)*Math.tan(THREE.MathUtils.degToRad(this.camera.fov/2));
   group.scale.setScalar(pixelSize*height/canvas.height);
  }
- renderQuest(seconds){
+ cueGuide(cue){
+  this.guideCue=cue;
+  this.guideStarted=performance.now()/1000;
+ }
+ guideGesture(seconds){
+  const elapsed=seconds-this.guideStarted;
+  if(reduced||this.currentScene!=="quest"||elapsed<0)return {reach:0,step:0,lift:0};
+  const arc=(start,end)=>elapsed>start&&elapsed<end?Math.sin(Math.PI*(elapsed-start)/(end-start)):0;
+  if(this.guideCue==="present")return {reach:arc(.12,1.35),step:arc(0,1.45),lift:arc(0,.38)};
+  if(this.guideCue==="celebrate")return {reach:arc(0,.9),step:0,lift:arc(0,.6)};
+  return {reach:arc(0,1.25)*.75,step:arc(0,.95)*.55,lift:0};
+ }
+ renderQuest(seconds,gesture){
   const objects=this.questObjects;
   if(!objects)return;
   const {choices,demo,equation,screen}=this.questBounds;
   this.camera.updateMatrixWorld();
-  this.anchor(this.hero,screen.left+screen.width*.26,demo.bottom-8,2.1,Math.min(screen.width*.124,54));
+  const heroX=screen.left+screen.width*.25;
+  this.anchor(this.hero,heroX+gesture.step*screen.width*.11,demo.bottom-26-gesture.lift*12,2.1,Math.min(screen.width*.128,56));
   this.anchor(objects.demo,demo.left+demo.width*.5,demo.top+demo.height*.50,1.8,Math.min(demo.width*.35,61));
   this.anchor(objects.equation,equation.left+equation.width*.5,equation.bottom-6,2.4,Math.min(equation.width*.145,59));
-  const elapsed=seconds-this.questStarted/1000;
+  const presenting=this.guideCue==="present"&&!reduced;
+  const elapsed=seconds-this.guideStarted;
   objects.equation.children.forEach((tile,index)=>{
-   tile.scale.setScalar(reduced?1:THREE.MathUtils.clamp((elapsed-index*.075)*5,.001,1));
+   tile.scale.setScalar(!presenting?1:THREE.MathUtils.clamp((elapsed-.30-index*.075)*5,.001,1));
   });
   objects.carriers.forEach(({anchor},index)=>{
    const rect=choices[index];
-   this.anchor(anchor,rect.left+rect.width*.5,rect.top+rect.height*.36,2.6,Math.min(rect.width*.51,rect.height*.34,46));
+   const arrival=presenting?THREE.MathUtils.clamp((elapsed-.60-index*.08)*2.8,0,1):1;
+   const settled=1-(1-arrival)**3;
+   const x=THREE.MathUtils.lerp(heroX,rect.left+rect.width*.5,settled);
+   const y=THREE.MathUtils.lerp(equation.bottom,rect.top+rect.height*.36,settled);
+   this.anchor(anchor,x,y,2.6,Math.min(rect.width*.51,rect.height*.34,46)*Math.max(.001,settled));
   });
   animateQuestObjects(objects,seconds,reduced);
  }
@@ -560,6 +597,7 @@ class AdventureWorld{
   this.frame=requestAnimationFrame(this.tick);
   if(document.hidden||(this.last&&t-this.last<33))return;this.last=t;
   const seconds=t/1000;
+  const staging=this.guideGesture(seconds);
   let mouthTarget=.17;
   if(state.speaking&&voiceAnalyser&&voiceContext.state==="running"){
    voiceAnalyser.getByteTimeDomainData(voiceSamples);
@@ -577,12 +615,12 @@ class AdventureWorld{
    const bounce=this.isCorrect?pulse*Math.sin(pulse*Math.PI*3)**2:0;
    this.actor.position.y=Math.sin(seconds*2.4)*.055+bounce*.43;
    this.actor.rotation.z=Math.sin(seconds*1.4)*.025+(this.isCorrect?0:Math.sin(pulse*15)*pulse*.1);
-   this.actor.rotation.y=Math.sin(seconds*.9)*.08+(this.isCorrect?0:-pulse*.18);
+   this.actor.rotation.y=Math.sin(seconds*.9)*.08+staging.reach*.38+(this.isCorrect?0:-pulse*.18);
    this.crown.scale.y=.9+Math.sin(seconds*2)*.12+bounce*.3;
    const blink=Math.max(.1,Math.min(1,Math.abs(seconds%3.8-3.5)*10));
    for(const eye of this.eyes)eye.scale.y=blink;
    for(const {arm,s} of this.arms){
-    arm.rotation.z=s*(.28+gesture+(this.isCorrect?bounce*1.5:pulse*.3));
+    arm.rotation.z=s*(.28+gesture+(s>0?staging.reach*1.48:staging.reach*.30)+(this.isCorrect?bounce*2.4:pulse*.3));
     arm.rotation.x=-.16+(state.speaking?gesture:0);
    }
    for(const item of this.motion){
@@ -593,7 +631,7 @@ class AdventureWorld{
    this.camera.position.x=offset*offset*.42;
    this.camera.lookAt(this.aim);
   }
-  if(this.currentScene==="quest")this.renderQuest(seconds);
+  if(this.currentScene==="quest")this.renderQuest(seconds,staging);
   this.renderer.render(this.scene,this.camera);
  }
  dispose(){cancelAnimationFrame(this.frame);this.resizer.disconnect();this.clear(this.environment);this.clear(this.tokens);this.clear(this.hero);this.renderer.dispose()}
