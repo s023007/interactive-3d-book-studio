@@ -83,7 +83,7 @@ function updateScore(){$("stars").textContent=arab(state.score)}
 function beginGrade(){haltSpeech();show("grade");speak(story.grade);}
 function startQuest(packId){
  state.pack=PACKS[packId]||PACKS.fractions;state.index=0;state.score=0;state.tries=0;
- updateScore();buildQuestion();show("quest",packId);
+ updateScore();show("quest",packId);buildQuestion();
  speak(state.pack.welcome+" السؤال الأول. "+sayMath(state.pack.questions[0].math));
 }
 function buildQuestion(){
@@ -126,7 +126,7 @@ function answer(i){
 function moveOn(){
  haltSpeech();
  if(state.index<state.pack.questions.length-1){
-  state.index++;buildQuestion();show("quest",state.pack.id);
+  state.index++;show("quest",state.pack.id);buildQuestion();
   speak("هيا إلى التحدّي التالي. "+state.pack.questions[state.index].lead+" "+sayMath(state.pack.questions[state.index].math));
  }else finish();
 }
