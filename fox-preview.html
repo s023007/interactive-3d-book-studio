@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الثعلب والربع الناقص | ورّاق</title>
+<link rel="stylesheet" href="./fox-preview.css">
+<script type="importmap">{"imports":{
+ "three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js",
+ "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/"
+}}</script>
+</head>
+<body>
+<main>
+<header><a href="./adventure.html">ورّاق</a><span>مدينة المرجان</span></header>
+<h1>الثعلب والربع الناقص</h1>
+<div id="stage"><canvas id="character" aria-label="ثعلب ثلاثي الأبعاد"></canvas><div id="reef-gate" class="reef-gate" aria-hidden="true"><span></span><span></span></div></div>
+<p id="status" role="status">جارٍ تحميل الثعلب…</p>
+<section class="mission" aria-labelledby="mission-title">
+<nav class="gate-progress" aria-label="تقدّم رحلة المرجان"><ol id="gate-progress"></ol><button id="restart" type="button" hidden>ابدأ من جديد</button></nav>
+<h2 id="mission-title" tabindex="-1"></h2>
+<blockquote id="mission-line"></blockquote>
+<div class="shell-board" id="shell-board" role="img"></div>
+<div id="choices" class="choices" aria-label="قطع الصدفة" role="group"></div>
+<p id="feedback" role="status"></p>
+<div class="mission-actions"><button id="next-gate" type="button" hidden>البوابة التالية ←</button><button id="replay" type="button" hidden>أعد المهمة</button></div>
+</section>
+<details id="voice-tools"><summary>الصوت وحركة الثعلب</summary>
+<p class="note">جملة اختبار الصوت: «معنا نصف الصدفة. أي قطعة تكمل ثلاثة أرباع؟»</p>
+<label for="recording">أرفق تسجيلًا عربيًا للتجربة</label>
+<input id="recording" type="file" accept="audio/*">
+<div class="actions">
+<button id="speak" disabled>شغّل التسجيل</button>
+<button id="walk" disabled aria-pressed="false">جرّب المشي</button>
+</div>
+<p class="note">يُشغّل الملف من جهازك. يدخل الصوت في معاينة حركة الفك ويبقى داخل الصفحة.</p>
+</details>
+</main>
+<script type="module" src="./fox-preview.js"></script>
+</body>
+</html>
