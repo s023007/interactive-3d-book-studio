@@ -212,3 +212,5 @@ body{background:#19194e}
 .quest-screen .scene-narrator { border-start-end-radius: 3px; }
 .game[data-guide-cue="nudge"] .narrator-head { color: #ffe2a1; }
 .game[data-guide-cue="celebrate"] .narrator-head { color: #eaff8a; }
+
+.coral-link{display:grid;place-items:center;min-height:44px;color:#fff1b9;font-weight:bold}
