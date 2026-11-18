@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تجربة الثعلب والصوت | ورّاق</title>
+<link rel="stylesheet" href="./fox-preview.css">
+<script type="importmap">{"imports":{
+ "three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js",
+ "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/"
+}}</script>
+</head>
+<body>
+<main>
+<header><a href="./adventure.html">ورّاق</a><span>اختبار الشخصية</span></header>
+<h1>الثعلب في ورّاق</h1>
+<div id="stage"><canvas id="character" aria-label="ثعلب ثلاثي الأبعاد"></canvas></div>
+<p id="status" role="status">جارٍ تحميل الثعلب…</p>
+<blockquote>«معنا نصف الصدفة. أي قطعة تكمل ثلاثة أرباع؟»</blockquote>
+<label for="recording">أرفق تسجيلًا عربيًا لهذه الجملة</label>
+<input id="recording" type="file" accept="audio/*">
+<div class="actions">
+<button id="speak" disabled>شغّل التسجيل</button>
+<button id="walk" disabled aria-pressed="false">جرّب المشي</button>
+</div>
+<p class="note">يُشغّل الملف من جهازك. يدخل الصوت في معاينة حركة الفك ويبقى داخل الصفحة.</p>
+</main>
+<script type="module" src="./fox-preview.js"></script>
+</body>
+</html>
