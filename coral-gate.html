@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>فُقّاع وبوابة المرجان | ورّاق</title>
+  <link rel="stylesheet" href="./coral-gate.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js"}}</script>
+</head>
+<body>
+  <main class="game">
+    <header><a href="./adventure.html">ورّاق</a><span>مدينة المرجان</span></header>
+    <h1>فُقّاع وبوابة المرجان</h1>
+    <p class="mission">الصدفة مقسّمة إلى أربعة أجزاء متساوية. اجمع ثلاثة منها وافتح البوابة.</p>
+    <section id="stage" class="stage" aria-label="الشعاب المرجانية">
+      <div class="reef reef-east" aria-hidden="true"></div><div class="reef reef-west" aria-hidden="true"></div>
+      <div id="fish" class="fish" aria-hidden="true"></div>
+      <canvas id="puppet" aria-hidden="true"></canvas>
+      <button id="gate" class="gate" type="button" aria-label="السباحة إلى بوابة المرجان"><span>البوابة</span></button>
+      <div id="shells"></div>
+    </section>
+    <section class="controls" aria-label="حالة المهمة">
+      <div class="fraction-row">
+        <div id="pieces" class="pieces" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div id="fraction" class="fraction" aria-label="صفر من أربعة"><b id="count">٠</b><span>٤</span></div>
+        <button id="reset" class="reset" type="button">أعد الجولة</button>
+      </div>
+      <p id="status" role="status">المس أي مكان ليسبح فُقّاع إليه، أو استخدم مفاتيح الأسهم.</p>
+    </section>
+  </main>
+  <script type="module" src="./coral-gate.js"></script>
+</body>
+</html>
