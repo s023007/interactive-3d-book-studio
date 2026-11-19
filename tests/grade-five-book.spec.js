@@ -17,7 +17,9 @@ for(const viewport of [{width:360,height:800},{width:390,height:844},{width:1440
       const press=selector=>mobile?page.locator(selector).tap():page.locator(selector).click();
       await page.goto('/grade-five-book.html');
       await expect(page.locator('#door-map')).toHaveAttribute('data-projected','');
-      await expect(page.locator('.door')).toHaveCount(3);
+      await expect(page.locator('.door')).toHaveCount(6);
+      await expect(page.locator('#map-count')).toContainText('٦ أسئلة');
+      for(const door of await page.locator('.door').all())await expect(door).toBeInViewport({ratio:1});
       await page.screenshot({path:info.outputPath('paper-map.png')});
       await press('.door:first-child');
       await expect(page.locator('#fold')).toBeEnabled();
@@ -39,7 +41,7 @@ for(const viewport of [{width:360,height:800},{width:390,height:844},{width:1440
       await press('#check');
       await expect(page.locator('#feedback')).toContainText('صحيح');
       await press('#next');
-      await expect(page.locator('[data-page="4"]')).toBeDisabled();
+      await expect(page.locator('[data-page="6"]')).toBeDisabled();
       await press('#explain');
       await expect(page.locator('#feedback')).toContainText('السؤال الجديد');
       await press('[data-option="1"]');
@@ -47,6 +49,16 @@ for(const viewport of [{width:360,height:800},{width:390,height:844},{width:1440
       await expect(page.locator('#feedback')).toContainText('صحيح');
       await press('#next');
       await press('[data-option="1"]');
+      await press('#check');
+      await expect(page.locator('#feedback')).toContainText('صحيح');
+      await press('#next');
+      await expect(page.locator('#sheet-title')).toHaveText('مكعب أم صندوق؟');
+      await press('[data-option="1"]');
+      await press('#check');
+      await expect(page.locator('#feedback')).toContainText('صحيح');
+      await press('#next');
+      await expect(page.locator('#sheet-title')).toHaveText('ألواح متوازي المستطيلات');
+      await press('[data-option="2"]');
       await press('#check');
       await expect(page.locator('#feedback')).toContainText('صحيح');
       await press('#next');
@@ -64,7 +76,7 @@ for(const viewport of [{width:360,height:800},{width:390,height:844},{width:1440
 
 test('keeps the lesson playable with the renderer unavailable and voices absent',async({page})=>{
   await page.route('https://cdn.jsdelivr.net/npm/three@0.174.0/build/**',route=>route.abort());
-  await page.route('**/assets/grade-five-audio/*.mp3',route=>route.abort());
+  await page.route(/\/assets\/grade-five-audio\/.*\.mp3(?:\?.*)?$/,route=>route.abort());
   await page.addInitScript(()=>{Object.defineProperty(window.speechSynthesis,'getVoices',{value:()=>[]});});
   await page.goto('/grade-five-book.html');
   await page.locator('.door:first-child').click();
@@ -121,4 +133,13 @@ test('walks through a door, marks progress and allows direct review from the ind
   await page.locator('[data-shortcut="3"]').click();
   await expect(page.locator('#sheet-title')).toHaveText('أوجه الصندوق');
   await expect(map).toBeHidden();
+});
+
+test('opens the last question from the overview without walking the preceding route',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.goto('/grade-five-book.html');
+  await page.getByRole('button',{name:'ألواح الصندوق'}).click();
+  await expect(page.locator('#sheet-title')).toHaveText('ألواح متوازي المستطيلات');
+  await page.locator('#show-map').click();
+  await expect(page.locator('#map-count')).toContainText('٠ مكتملة');
 });

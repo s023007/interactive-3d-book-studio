@@ -12,9 +12,9 @@ const strip=[[0,0],[-2,0],[-1,0],[1,0],[2,0],[3,0]];
 const stepped=[[0,0],[1,0],[2,0],[0,1],[-1,1],[-2,1]];
 const doubleBack=[[0,0],[1,0],[2,0],[3,0],[0,1],[2,1]];
 const pages=[
-  {label:"اكتشف", title:"من الورق إلى مجسّم", question:"كيف تتحول ستة مربعات على الصفحة إلى مكعب؟",
+  {label:"اكتشف", title:"من الورق إلى مجسّم", question:"بعد طي الشبكة، كم وجهًا يكوّن المكعب؟",
     task:"اطوِ الشبكة ثم افتحها لترى أين يذهب كل وجه.", hint:"لاحظ أن المربعات تتصل على حوافها.",
-    explain:"ترتفع الأوجه على حواف الورقة حتى تغلق المكعب من جهاته الست.", model:cross},
+    explain:"ترتفع الأوجه على حواف الورقة حتى تغلق المكعب من جهاته الست.", model:cross, items:["أربعة أوجه","ستة أوجه","ثمانية أوجه"], answer:1},
   {label:"جرّب", title:"أين تذهب الأوجه؟", question:"أي شبكة تُغلِق مكعبًا؟ جرّب طيّ كل واحدة.",
     task:"اختر شبكة، ثم اطوها أو تحقّق من اختيارك.", hint:"انظر إلى المربعين خارج الصف. هل يغطيان جهتين مختلفتين؟",
     explain:"تغطي الشبكة «ب» جهات المكعب الست. في الشبكة أ يحاول وجهان تغطية الجهة نفسها.", items:[overlap,cross], answer:1},
@@ -28,6 +28,18 @@ const pages=[
     explain:"للصندوق ثلاثة أزواج من الأوجه المتقابلة. لكل لون على المجسّم وجهان متقابلان متطابقان.",
     items:["زوجان","ثلاثة أزواج","أربعة أزواج"], answer:1, cuboid:true,
     retry:{question:"في هذا الصندوق، ما الوجه المطابق والمقابل للوجه الأمامي؟",items:["الوجه الخلفي","الوجه العلوي","الوجه الأيمن"],answer:0}},
+  {label:"ميّز", title:"مكعب أم صندوق؟", question:"أي وصف يميّز المكعب عن صندوق مستطيل تختلف أبعاده؟",
+    task:"انظر إلى أوجه المجسّم وقارن أطوال الحواف.", hint:"فكّر في عرض الوجه وطوله. هل يختلفان في المكعب؟",
+    explain:"في المكعب ستة أوجه مربعة متطابقة. وقد تختلف أبعاد أوجه متوازي المستطيلات.",
+    items:["له ستة أوجه","كل أوجهه مربعة ومتطابقة","له أوجه متقابلة"], answer:1, cuboid:true,
+    success:"صحيح. شكل الأوجه وتطابقها هو الوصف الذي يميّز المكعب.",
+    retry:{question:"صندوق طوله أربعة وعرضه ثلاثة وارتفاعه اثنان. هل هو مكعب؟",items:["نعم، لأن له ستة أوجه","لا، لأن أبعاده مختلفة","نعم، لأن زواياه قائمة"],answer:1}},
+  {label:"ركّب", title:"ألواح متوازي المستطيلات", question:"صندوق أبعاده اثنان وثلاثة وأربعة. ما قياس اللوح المقابل للوح اثنين في ثلاثة؟",
+    task:"ابحث عن الوجه المطابق في الحجم على الجهة الأخرى.", hint:"اللوح المقابل يغطي فتحة لها الطول والعرض نفسيهما.",
+    explain:"يتطابق كل وجه مع الوجه المقابل. اللوح اثنان في ثلاثة يقابله لوح اثنان في ثلاثة.",
+    items:["٢ × ٤","٣ × ٤","٢ × ٣"], answer:2, cuboid:true,
+    success:"صحيح. الأبعاد نفسها للوجهين المتقابلين.",
+    retry:{question:"في الصندوق نفسه، أي لوح يطابق وجهًا أبعاده ثلاثة في أربعة؟",items:["٣ × ٤","٢ × ٤","٢ × ٣"],answer:0}},
   {label:"الإنجاز",title:"مستكشف المجسّمات",question:"أكملت تطبيق الطيّ وأزواج الأوجه المتقابلة.",
     task:"أُضيف ختم مستكشف المجسّمات إلى الفهرس.",model:cross},
 ];
@@ -45,7 +57,13 @@ const doors=[
   {label:"باب الاكتشاف",page:0},
   {label:"باب التجربة",page:1},
   {label:"باب التحدّي",page:2},
+  {label:"أوجه الصندوق",page:3},
+  {label:"مكعب أم صندوق؟",page:4},
+  {label:"ألواح الصندوق",page:5},
 ];
+const rewardPage=pages.length-1;
+const masteryPages=[2,3,4,5];
+const earnedToday=()=>masteryPages.every(page=>solved.has(page));
 let playing=null;
 let voiceRequest=0;
 const solved=new Set();
@@ -54,7 +72,7 @@ try{
   awarded=localStorage.getItem(saveKey)==="earned";
   const saved=JSON.parse(localStorage.getItem(progressKey));
   if(Array.isArray(saved)){
-    for(const page of saved)if([0,1,2,3].includes(page))solved.add(page);
+    for(const page of saved)if(doors.some(door=>door.page===page))solved.add(page);
   }
 }catch{}
 function saveProgress(){
@@ -110,7 +128,7 @@ function narrate(text){
   const request=voiceRequest;
   const file=narration.get(text);
   if(!file){deviceNarration(text,request);return;}
-  const clip=new Audio(new URL("./assets/grade-five-audio/"+file,import.meta.url));
+  const clip=new Audio(new URL("./assets/grade-five-audio/"+file+"?v=2",import.meta.url));
   playing=clip;
   const onFailure=()=>{
     if(request!==voiceRequest||playing!==clip)return;
@@ -142,10 +160,10 @@ function model(){
     const figure=$("fallback-figure");
     const item=p.model??currentItems(p)?.[selected??0];
     if(Array.isArray(item))figure.replaceChildren(thumbnail(item));
-    else figure.textContent="تخيّل صندوقًا له وجه علوي وسفلي وأمامي وخلفي ووجه على كل جانب.";
+    else figure.textContent="للصندوق وجه علوي وسفلي وأمامي وخلفي ووجه على كل جانب.";
     return;
   }
-  if(p.cuboid)scene.setCuboid();
+  if(p.cuboid)scene.setCuboid(index);
   else{
     const items=currentItems(p);
     scene.setNet(p.model??items[selected??0]);
@@ -194,19 +212,19 @@ function draw(){
   $("task").textContent=p.task;
   teachingFeedback("");
   $("back").disabled=index===0;
-  $("next").disabled=index===4||(index===3&&(!solved.has(2)||!solved.has(3)));
-  $("next").textContent=index===3?"الإنجاز ←":"التالي ←";
-  $("fold").hidden=p.cuboid===true||index===4;
+  $("next").disabled=index===rewardPage||(index===rewardPage-1&&!awarded);
+  $("next").textContent=index===rewardPage-1?"الإنجاز ←":"التالي ←";
+  $("fold").hidden=p.cuboid===true||index===rewardPage;
   $("fold").disabled=!scene;
   $("fold").textContent=folded?"افتح الشبكة":"اطوِ الشبكة";
   $("check").hidden=!p.items;
   $("check").disabled=selected===null;
-  $("hint").hidden=$("explain").hidden=index===4;
+  $("hint").hidden=$("explain").hidden=index===rewardPage;
   for(const button of $("page-tabs").querySelectorAll("button")){
     const number=Number(button.dataset.page);
     if(number===index)button.setAttribute("aria-current","page");
     else button.removeAttribute("aria-current");
-    button.disabled=number===4&&(!solved.has(2)||!solved.has(3));
+    button.disabled=number===rewardPage&&!awarded;
   }
   showOptions();model();stamp();
 }
@@ -219,11 +237,11 @@ function displayMode(showMap){
   $("fallback").hidden=showMap||!rendererFailed;
 }
 function go(next){
-  if(next<0||next>=pages.length||next===4&&(!solved.has(2)||!solved.has(3)))return;
+  if(next<0||next>=pages.length||next===rewardPage&&!awarded)return;
   speechStop();
   displayMode(false);
   scene?.showMap(false);
-  index=next;selected=null;hints=0;folded=index===4;
+  index=next;selected=null;hints=0;folded=index===rewardPage;
   draw();
   $("sheet-title").tabIndex=-1;
   $("sheet-title").focus({preventScroll:true});
@@ -257,15 +275,16 @@ function showMap(focus=false){
   else delete map.dataset.projected;
   doorButtons.forEach((button,i)=>{
     const {label,page}=doors[i];
-    const complete=i===2?awarded:solved.has(page);
+    const complete=solved.has(page);
     button.toggleAttribute("data-complete",complete);
     button.removeAttribute("data-opening");
     button.removeAttribute("aria-disabled");
     button.firstElementChild.textContent=complete?"✓":digits.format(i+1);
     button.ariaLabel=complete?label+"، مكتمل":label;
   });
+  $("map-count").textContent=digits.format(doors.length)+" أسئلة · "+digits.format(solved.size)+" مكتملة";
   $("map-status").textContent=awarded?"ختم مستكشف المجسّمات في فهرسك. اختر بابًا للمراجعة.":
-    "اكتشف الطيّ، جرّب الشبكات، ثم طبّق الفكرة لتحصل على الختم.";
+    "لكل محطة سؤال. ابدأ بأيّ سؤال، وأكمل التطبيقات الأربعة لتحصل على الختم.";
   scene?.showMap(true,doorButtons);
   stamp();
   if(focus)doorButtons[0].focus({preventScroll:true});
@@ -285,7 +304,6 @@ $("fold").onclick=()=>{
   folded=!folded;
   $("fold").textContent=folded?"افتح الشبكة":"اطوِ الشبكة";
   scene?.fold(folded);
-  if(index===0&&folded){solved.add(0);saveProgress();}
 };
 $("read").onclick=()=>narrate($("question").textContent);
 $("hear").onclick=()=>narrate($("feedback").textContent);
@@ -303,7 +321,6 @@ $("explain").onclick=()=>{
     $("fold").textContent="افتح الشبكة";
     model();
     teachingFeedback(p.explain);
-    if(scene){solved.add(0);saveProgress();}
     return;
   }
   if(index===1){
@@ -331,15 +348,15 @@ $("check").onclick=()=>{
   }
   solved.add(index);
   saveProgress();
-  if(solved.has(2)&&solved.has(3)){
+  if(earnedToday()){
     awarded=true;
     try{localStorage.setItem(saveKey,"earned");}catch{}
   }
   if(!p.cuboid){folded=true;scene?.fold(true);$("fold").textContent="افتح الشبكة";}
-  teachingFeedback(index===2?"صحيح. هذه الشبكة تغلق الجهات الست.":
-    index===3?"صحيح. وجدت الأوجه المتقابلة.":"صحيح. اكتملت أوجه المكعب.");
-  $("next").disabled=index===3&&(!solved.has(2)||!solved.has(3));
-  $("page-tabs").querySelector("[data-page='4']").disabled=!awarded||!solved.has(2)||!solved.has(3);
+  teachingFeedback(p.success??(index===2?"صحيح. هذه الشبكة تغلق الجهات الست.":
+    index===3?"صحيح. وجدت الأوجه المتقابلة.":"صحيح. اكتملت أوجه المكعب."));
+  $("next").disabled=index===rewardPage-1&&!awarded;
+  $("page-tabs").querySelector("[data-page='"+rewardPage+"']").disabled=!awarded;
   stamp();
 };
 $("index").onclick=()=>$("table").showModal();

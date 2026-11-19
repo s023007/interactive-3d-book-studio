@@ -59,9 +59,11 @@ export function createBookScene(canvas){
 
   const paperMap=createPaperMap(scene);
   const home=new THREE.Vector3(3.05,0,.97);
-  const mapHome=new THREE.Vector3(2.64,0,2.13);
+  const mapDepth=1.55;
+  const mapHome=new THREE.Vector3(1.37,0,2.66*mapDepth);
+  paperMap.map.scale.z=mapDepth;
   const bookCamera=new THREE.Vector3(4.6,13.9,14);
-  const mapCamera=new THREE.Vector3(.40,14.8,14.6);
+  const mapCamera=new THREE.Vector3(.12,23,10.6);
   const projection=new THREE.Vector3();
   let mapShowing=false, doorLabels=[], journey=null;
   function showMap(value,labels=[]){
@@ -69,37 +71,46 @@ export function createBookScene(canvas){
     doorLabels=labels;
     journey=null;
     paperMap.map.visible=value;
+    book.scale.z=value?mapDepth:1;
     group.visible=!value;
     paperMap.doors.forEach(door=>{door.rotation.y=0;});
     raccoon.body.position.copy(value?mapHome:home);
     raccoon.body.rotation.y=Math.PI-.22;
     raccoon.legs.forEach(leg=>{leg.rotation.x=0;});
     raccoon.arms[1].rotation.x=0;
-    raccoon.body.scale.setScalar(value?1.06:1.32);
+    raccoon.body.scale.setScalar(value?1.20:1.32);
     if(value&&!last){camera.position.copy(mapCamera);camera.lookAt(0,0,.12);alignDoors();}
   }
   function visitDoor(index,onComplete){
     if(reduced){onComplete();return;}
     const [x,z]=paperMap.positions[index];
-    journey={index,onComplete,started:performance.now(),from:raccoon.body.position.clone(),x,z};
+    const from=raccoon.body.position;
+    const corridor=x>0?1.72:-1.72;
+    const approach=z<0?-.41:2.30;
+    const path=new THREE.CurvePath();
+    const stops=[[from.x,from.z],[corridor,2.30*mapDepth],[corridor,approach*mapDepth],[x,approach*mapDepth],[x,(z+.55)*mapDepth]];
+    for(let i=1;i<stops.length;i++){
+      const a=new THREE.Vector2(...stops[i-1]),b=new THREE.Vector2(...stops[i]);
+      if(a.distanceToSquared(b)>.001)path.add(new THREE.LineCurve(a,b));
+    }
+    journey={index,onComplete,started:performance.now(),path};
   }
   function moveMap(now){
     if(journey){
-      const {index,from,x,z,started,onComplete}=journey;
+      const {index,started,onComplete,path}=journey;
       const seconds=(now-started)/1000;
-      const step=THREE.MathUtils.clamp(seconds/.67,0,1);
-      const across=THREE.MathUtils.smoothstep(step,0,.43);
-      const along=THREE.MathUtils.smoothstep(step,.36,1);
-      raccoon.body.position.x=THREE.MathUtils.lerp(from.x,x,across);
-      raccoon.body.position.z=THREE.MathUtils.lerp(from.z,z+.70,along);
-      const heading=step<.4?(x<from.x?Math.PI/2:-Math.PI/2):0;
-      raccoon.body.rotation.y=heading;
-      const pace=seconds*25;
+      const step=THREE.MathUtils.smoothstep(seconds,0,.82);
+      const point=path.getPoint(step);
+      const ahead=path.getPoint(Math.min(1,step+.012));
+      raccoon.body.position.x=point.x;
+      raccoon.body.position.z=point.y;
+      if(step<.995)raccoon.body.rotation.y=Math.atan2(point.x-ahead.x,point.y-ahead.y);
+      const pace=seconds*27;
       raccoon.legs.forEach((leg,i)=>{leg.rotation.x=Math.sin(pace)*(i?1:-1)*.57*(1-step);});
-      raccoon.body.position.y=step<1?Math.abs(Math.sin(pace))*.095*(1-step):0;
-      raccoon.arms[1].rotation.x=-THREE.MathUtils.smoothstep(seconds,.60,.82)*.95;
-      paperMap.doors[index].rotation.y=-THREE.MathUtils.smoothstep(seconds,.64,1.01)*1.72;
-      if(seconds>=1.10){
+      raccoon.body.position.y=step<1?Math.abs(Math.sin(pace))*.080*(1-step):0;
+      raccoon.arms[1].rotation.x=-THREE.MathUtils.smoothstep(seconds,.72,.92)*.95;
+      paperMap.doors[index].rotation.y=-THREE.MathUtils.smoothstep(seconds,.77,1.14)*1.72;
+      if(seconds>=1.23){
         journey=null;
         onComplete();
       }
@@ -112,7 +123,7 @@ export function createBookScene(canvas){
     paperMap.positions.forEach(([x,z],i)=>{
       const label=doorLabels[i];
       if(!label)return;
-      projection.set(x,.11,z+.82).project(camera);
+      projection.set(x,.13,(z+.78)*mapDepth).project(camera);
       label.style.setProperty("--door-x",((projection.x+1)*width/2)+"px");
       label.style.setProperty("--door-y",((1-projection.y)*height/2)+"px");
     });
@@ -154,12 +165,15 @@ export function createBookScene(canvas){
     }
     addFace(group,originX,originZ,0);
   }
-  function setCuboid(){
+  function setCuboid(page){
     clear();mode="cuboid";current=null;desired=fold=0;
-    group.position.set(-2.45,1.0,.08);
+    group.position.set(page===4?-1.44:-2.45,1.0,.08);
     cuboid=new THREE.Mesh(new THREE.BoxGeometry(2.35,1.34,1.46),
       [0xce8bbd,0xce8bbd,0xf0b472,0xf0b472,0x9dbfc7,0x9dbfc7].map(color=>surface(color)));
     group.add(cuboid);
+    if(page===4){
+      box(group,[1.14,1.14,1.14],surface(0xcc9ec8),-2.10,-.33,.05);
+    }
   }
   function resize(){
     const {width,height}=canvas.getBoundingClientRect();

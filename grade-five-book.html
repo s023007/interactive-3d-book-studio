@@ -20,7 +20,7 @@
     <nav id="lesson-tabs" aria-label="صفحات الدرس" hidden><ol id="page-tabs"></ol></nav>
     <section class="stage" aria-label="كتاب مفتوح عليه مشهد الدرس">
       <canvas id="paper-scene" aria-hidden="true"></canvas>
-      <div class="prompt" id="map-prompt"><span>خريطة الدرس</span><p>اختر بابًا، وسيمشي الراكون إليه.</p></div>
+      <div class="prompt" id="map-prompt"><span id="map-count">٦ أسئلة</span><p>خريطة المجسّمات</p></div>
       <nav id="door-map" aria-label="أبواب خريطة الدرس"></nav>
       <div class="prompt" id="lesson-prompt" hidden><span id="sheet-title"></span><p id="question"></p></div>
       <div id="fallback" hidden>العرض الثلاثي الأبعاد غير متاح. يمكنك متابعة الرسوم المسطحة والأسئلة.<div id="fallback-figure"></div></div>
@@ -28,7 +28,7 @@
     </section>
     <section id="map-summary" class="work" aria-labelledby="map-task">
       <h2 id="map-task">رحلتك بين المجسّمات</h2>
-      <p id="map-status" class="feedback" role="status">اكتشف الطيّ، جرّب الشبكات، ثم طبّق الفكرة لتحصل على الختم.</p>
+      <p id="map-status" class="feedback" role="status">المس المحطة التي تريدها. يمشي الراكون إليها ويفتح السؤال.</p>
       <button id="map-stamp" type="button" class="quiet" hidden>شاهد ختمك ✦</button>
     </section>
     <section id="lesson-work" class="work" aria-labelledby="task" hidden>
@@ -57,6 +57,8 @@
       <button data-shortcut="1" type="button" class="quiet">جرّب</button>
       <button data-shortcut="2" type="button" class="quiet">طبّق</button>
       <button data-shortcut="3" type="button" class="quiet">قارن</button>
+      <button data-shortcut="4" type="button" class="quiet">ميّز</button>
+      <button data-shortcut="5" type="button" class="quiet">ركّب</button>
     </nav>
     <p id="stamp" class="stamp" hidden>✦ ختم مستكشف المجسّمات</p>
     <button id="restart" type="button">ابدأ محاولة جديدة</button>
