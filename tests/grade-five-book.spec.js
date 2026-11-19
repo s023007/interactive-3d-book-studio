@@ -12,6 +12,99 @@ async function openGeometry(page){
   await cards.getByRole('button',{name:/الهندسة.*هضبة الهندسة/}).click();
   await cards.getByRole('button',{name:/المكعب ومتوازي المستطيلات/}).click();
 }
+
+const newLessons=[
+  {width:360,height:800,name:'الخطوط المتوازية والمتعامدة',map:'معابر الخطوط',title:'عارضتان في المسار',
+   tool:'ضع زاوية القياس',observation:'المسافة',answers:[0,1,1],stamp:'مستكشف الخطوط'},
+  {width:390,height:844,name:'المثلثات',map:'ورش المثلثات',title:'مقارنة أضلاع المثلث',
+   tool:'قس الضلع الثالث',observation:'٤ وحدات',answers:[0,1,2],stamp:'خبير الأضلاع'},
+  {width:768,height:1024,name:'الإحداثيات',map:'شبكة الإحداثيات',title:'خطوتان من نقطة الأصل',
+   tool:'تتبّع ص',observation:'اقرأ س قبل ص',answers:[1,0,2],stamp:'مستكشف الإحداثيات'},
+  {width:1440,height:900,name:'الانسحاب والانعكاس',map:'مسار الحركة والمرآة',title:'حرّك القطعة الورقية',
+   tool:'تتبّع الحركة',observation:'السهم الأفقي',answers:[0,1,1],stamp:'دليل التحويلات'},
+];
+
+for(const lesson of newLessons){
+  const {width,height}=lesson;
+  const mobile=width<500;
+  test.describe('geometry '+width,()=>{
+    test.use({viewport:{width,height},hasTouch:mobile,isMobile:mobile});
+    test('explores and earns a separate stamp at '+lesson.width+' in '+lesson.name,async({page},info)=>{
+      test.setTimeout(115000);
+      await page.emulateMedia({reducedMotion:'reduce'});
+      const faults=[];
+      page.on('pageerror',error=>faults.push(error.message));
+      await page.goto('/grade-five-book.html');
+      const cards=page.locator('#atlas-cards');
+      const openLesson=async()=>{
+        await cards.getByRole('button',{name:/الهندسة.*هضبة الهندسة/}).click();
+        await cards.getByRole('button',{name:new RegExp(lesson.name)}).click();
+      };
+      await openLesson();
+      await expect(page.locator('#door-map')).toHaveAttribute('data-projected','');
+      await expect(page.locator('#map-title')).toHaveText(lesson.map);
+      const doors=page.locator('#door-map .door');
+      await expect(doors).toHaveCount(3);
+      for(const door of await doors.all())await expect(door).toBeInViewport({ratio:1});
+      await page.screenshot({path:info.outputPath('lesson-map.png')});
+      if(mobile)await doors.first().tap();
+      else await doors.first().click();
+      await expect(page.locator('#sheet-title')).toHaveText(lesson.title);
+      await expect(page.locator('#fallback')).toBeHidden();
+      await expect(page.locator('#fold')).toBeHidden();
+      await page.getByRole('button',{name:lesson.tool,exact:true}).click();
+      await expect(page.locator('#concept-note')).toContainText(lesson.observation);
+      await expect(page.locator('#hear')).toBeVisible();
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
+      await page.screenshot({path:info.outputPath('lesson-activity.png')});
+      for(const [i,answer] of lesson.answers.entries()){
+        if(i===1){
+          await page.locator('[data-option="'+((answer+1)%3)+'"]').click();
+          await page.locator('#check').click();
+          await expect(page.locator('#feedback')).toContainText('أعد المحاولة');
+          await page.locator('#hint').click();
+          await expect(page.locator('#hear')).toBeVisible();
+        }
+        await page.locator('[data-option="'+answer+'"]').click();
+        await page.locator('#check').click();
+        await expect(page.locator('#feedback')).toContainText('صحيح');
+        await page.locator('#next').click();
+      }
+      await expect(page.locator('#sheet-title')).toHaveText(lesson.stamp);
+      await page.locator('#trail-unit').click();
+      await expect(cards.getByRole('button',{name:new RegExp(lesson.name)})).toContainText('ختم محفوظ');
+      await cards.getByRole('button',{name:/المكعب ومتوازي المستطيلات/}).click();
+      await expect(page.locator('#map-count')).toContainText('٠ مكتملة');
+      await page.reload();
+      await openLesson();
+      await expect(page.locator('#map-count')).toContainText('٣ مكتملة');
+      await page.locator('#map-stamp').click();
+      await expect(page.locator('#stamp')).toContainText(lesson.stamp);
+      expect(faults).toEqual([]);
+    });
+  });
+}
+
+test('keeps geometry manipulatives and alternate questions usable without WebGL',async({page})=>{
+  await page.route('https://cdn.jsdelivr.net/npm/three@0.174.0/build/**',route=>route.abort());
+  await page.goto('/grade-five-book.html');
+  await page.locator('#atlas-cards').getByRole('button',{name:/الهندسة.*هضبة الهندسة/}).click();
+  await page.locator('#atlas-cards').getByRole('button',{name:/الإحداثيات/}).click();
+  await page.getByRole('button',{name:'علامة المحور',exact:true}).click();
+  await expect(page.locator('#fallback-figure svg')).toHaveAttribute('aria-label',/س ٠ وص ٤/);
+  await page.locator('#explain').click();
+  await expect(page.locator('#feedback')).toContainText('السؤال الجديد');
+  await expect(page.locator('#fallback-figure svg')).toHaveAttribute('aria-label',/س ٤ وص ٠/);
+  await page.getByRole('button',{name:'تتبّع س',exact:true}).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#concept-note')).toContainText('أفقيًا');
+  await page.locator('[data-option="2"]').click();
+  await page.locator('#check').click();
+  await expect(page.locator('#feedback')).toContainText('طبّقت الفكرة');
+  await page.locator('#show-map').click();
+  await expect(page.locator('#map-count')).toContainText('١ مكتملة');
+});
+
 for(const viewport of [{width:360,height:800},{width:390,height:844},{width:768,height:1024},{width:1440,height:900}]){
   test.describe('grade-five '+viewport.width,()=>{
     const mobile=viewport.width<500;
@@ -179,9 +272,12 @@ test('opens maps for the index and unit and saves a local recording for the curr
   await expect(page.locator('#atlas-cards button')).toHaveCount(5);
   await expect(page.getByRole('button',{name:'معلم الخطوط المتوازية والمتعامدة',exact:true})).toBeVisible();
   await page.screenshot({path:info.outputPath('geometry-unit.png')});
-  await page.getByRole('button',{name:'معلم الخطوط المتوازية والمتعامدة',exact:true}).click();
+  await page.locator('#trail-index').click();
+  await page.getByRole('button',{name:'معلم الأعداد والعمليات',exact:true}).click();
+  await page.getByRole('button',{name:'معلم القيمة المكانية',exact:true}).click();
   await expect(page.locator('#atlas-note')).toContainText('قيد الإعداد');
-  await page.locator('#trail-unit').click();
+  await page.locator('#trail-index').click();
+  await page.getByRole('button',{name:'معلم الهندسة',exact:true}).click();
   await page.getByRole('button',{name:'معلم المكعب ومتوازي المستطيلات',exact:true}).click();
   await page.locator('.door:first-child').click();
   await page.locator('#voice-setup').click();

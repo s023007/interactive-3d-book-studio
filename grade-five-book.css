@@ -54,7 +54,7 @@ dialog::backdrop{background:#291d36ba}.modal-head{display:flex;justify-content:s
 #door-map .door{width:max-content;max-width:calc(100% / 3 - 8px);min-width:0}
 @media(max-width:500px){.book[data-view=map] .stage{height:clamp(320px,45svh,380px)}}
 
-nav ol{grid-template-columns:repeat(7,minmax(0,1fr))}
+nav ol{grid-template-columns:repeat(var(--page-columns,7),minmax(0,1fr))}
 .book[data-view=map] .stage{height:clamp(390px,61svh,580px);background:radial-gradient(ellipse at 50% 60%,#c59a82,#614b72 75%)}
 #door-map:not([data-projected]){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:60px;align-content:center;padding-inline:10px}
 #door-map:not([data-projected]) .door{max-width:100%;width:100%}
@@ -109,3 +109,21 @@ nav ol{grid-template-columns:repeat(7,minmax(0,1fr))}
 #voice-panel input[type=checkbox]{min-height:0;margin-inline-end:4px}
 
 @media(max-width:560px){.book-app:has(#index:not([hidden])) .level{display:none}.book-app:has(#index:not([hidden])) .brand{margin-inline-end:auto}}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.book[data-lesson=lines]{--geometry-wash:#8fae9d;--geometry-haze:#355956}
+.book[data-lesson=triangle]{--geometry-wash:#dbb488;--geometry-haze:#7a4851}
+.book[data-lesson=coordinates]{--geometry-wash:#a2bfbb;--geometry-haze:#3d5570}
+.book[data-lesson=transform]{--geometry-wash:#bca4bc;--geometry-haze:#594368}
+.book[data-lesson]:not([data-lesson=solids]):is([data-view=map],[data-view=lesson]) .stage{background:radial-gradient(ellipse at 49% 52%,var(--geometry-wash),var(--geometry-haze) 88%)}
+.book[data-lesson]:not([data-lesson=solids]) #fallback:has(svg){
+  inset:64px 8% 56px;padding:4px 8px;display:grid;justify-items:center;grid-template-rows:auto minmax(0,1fr);
+}
+#fallback:has(svg) #fallback-figure{margin:0;min-height:0;display:grid;place-items:center}
+#fallback-figure svg{display:block;height:100%;max-width:100%}
+.book[data-lesson]:not([data-lesson=solids]) #concept-tools button{background:#edf2df;border-color:#a5b89c;color:#29473c}
+.book[data-lesson]:not([data-lesson=solids]) #concept-tools button[aria-pressed=true]{background:#426653;border-color:#355243;color:white}
+.book[data-lesson]:not([data-lesson=solids]) .options + .feedback:empty{display:none}
+@media(max-width:500px){
+  .book[data-lesson]:not([data-lesson=solids])[data-view=lesson] .stage{height:clamp(245px,32svh,290px)}
+}

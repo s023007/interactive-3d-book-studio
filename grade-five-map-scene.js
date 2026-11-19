@@ -3,6 +3,12 @@ import * as THREE from "three";
 const positions=[[3.45,-1.65],[0,-1.65],[-3.45,-1.65],[3.45,.94],[0,.94],[-3.45,.94]];
 const palettes=[0xb46d93,0x568d83,0xd18447,0x6f8b56,0x8572b4,0x3e818a];
 const paperY=.025;
+const lessonMaps={
+  lines:{stops:[3,1,5],ink:0x3c776c,marks:[[[-.29,-.12],[.29,-.12]],[[-.29,.12],[.29,.12]]]},
+  triangle:{stops:[0,4,2],ink:0x9d614e,marks:[[[-.28,.16],[.28,.16]],[[.28,.16],[0,-.20]],[[0,-.20],[-.28,.16]]]},
+  coordinates:{stops:[0,1,5],ink:0x3d6688,marks:[[[0,.19],[0,-.21]],[[-.27,.05],[.27,.05]]]},
+  transform:{stops:[3,1,2],ink:0x805581,marks:[[[-.29,0],[.29,0]],[[.29,0],[.14,-.13]],[[.29,0],[.14,.13]]]},
+};
 
 export function createPaperMap(scene){
   const map=new THREE.Group();
@@ -51,9 +57,12 @@ export function createPaperMap(scene){
     piece(map,crown,0x88a571,x,paperY+.63*s,z).scale.setScalar(s*.77);
   });
   const iconColors=[0xffe2a8,0xddf3d3,0xffd8ac,0xf9e6ad,0xf3d9ed,0xd4e8ea];
+  const rooms=[],panels=[];
+  const figures=new Map();
   const doors=positions.map(([x,z],index)=>{
     const room=new THREE.Group();
     room.position.set(x,paperY+.054,z);map.add(room);
+    rooms.push(room);
     card(room,palettes[index],0,.038,.13,1.4,.075,1.15);
     card(room,0xccac96,-.53,.54,-.13,.115,1.04,.12);
     card(room,0xccac96,.53,.54,-.13,.115,1.04,.12);
@@ -61,10 +70,25 @@ export function createPaperMap(scene){
     card(room,0x55464f,0,.54,-.235,1.06,1.00,.06);
     const hinge=new THREE.Group();
     hinge.position.set(-.48,.075,-.03);room.add(hinge);
-    card(hinge,palettes[index],.48,.47,0,.94,.94,.065);
+    panels.push(card(hinge,palettes[index],.48,.47,0,.94,.94,.065));
     card(hinge,iconColors[index],.72,.42,.05,.10,.10,.055);
     return hinge;
   });
+  for(const [theme,{stops,ink,marks}] of Object.entries(lessonMaps)){
+    const group=new THREE.Group();
+    group.visible=false;map.add(group);
+    const crest=0xf8deb1;
+    for(const stop of stops){
+      const [x,z]=positions[stop];
+      const tile=card(group,ink,x,paperY+.10,z-.62,.92,.12,.48);
+      tile.rotation.y=.015;
+      for(const [[x1,z1],[x2,z2]] of marks){
+        const stroke=card(group,crest,x+(x1+x2)/2,paperY+.17,z-.62+(z1+z2)/2,Math.hypot(x2-x1,z2-z1),.035,.047);
+        stroke.rotation.y=-Math.atan2(z2-z1,x2-x1);
+      }
+    }
+    figures.set(theme,group);
+  }
   const dots=[];
   for(const z of [-.41,2.30]){
     for(let k=0;k<45;k++)dots.push([-4.01+k*.182,z,0]);
@@ -81,7 +105,17 @@ export function createPaperMap(scene){
     path.setMatrixAt(i,dummy.matrix);
   });
   map.add(path);
-  return {map,doors,positions};
+  function present(theme){
+    const design=lessonMaps[theme];
+    const stops=design?.stops??positions.map((_,i)=>i);
+    for(const [name,group] of figures)group.visible=name===theme;
+    rooms.forEach((room,i)=>{
+      room.visible=stops.includes(i);
+      panels[i].material=materials.get(design?.ink??palettes[i]);
+    });
+    return stops;
+  }
+  return {map,doors,positions,present};
 }
 
 export function createAtlasTerrain(scene){

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { makeRaccoon } from "./river-world.js";
 import { createPaperMap, createAtlasTerrain } from "./grade-five-map-scene.js";
+import { drawGeometryDiagram, positionSlidingPiece } from "./grade-five-geometry-scene.js";
 
 const side = 1.03;
 const palette = [0xcd81bd,0xe8a16f,0x84bfc0,0xf4c47c,0xa28eda,0xe29a9c];
@@ -71,15 +72,16 @@ export function createBookScene(canvas){
   const mapCamera=new THREE.Vector3(.12,23,10.6);
   const atlasCamera=new THREE.Vector3(2.7,17,12.5);
   const projection=new THREE.Vector3();
-  let mapShowing=false, atlasShowing=false, doorLabels=[], atlasLabels=[], journey=null;
+  let mapShowing=false, atlasShowing=false, doorLabels=[], atlasLabels=[], journey=null, stops=[];
   let pair=-1;
-  function showMap(value,labels=[]){
+  function showMap(value,labels=[],theme){
     atlasShowing=false;
     atlas.world.visible=false;
     mapShowing=value;
     doorLabels=labels;
     journey=null;
     paperMap.map.visible=value;
+    if(value)stops=paperMap.present(theme);
     book.scale.z=value?mapDepth:1;
     group.visible=!value;
     paperMap.doors.forEach(door=>{door.rotation.y=0;});
@@ -112,17 +114,18 @@ export function createBookScene(canvas){
   }
   function visitDoor(index,onComplete){
     if(reduced){onComplete();return;}
-    const [x,z]=paperMap.positions[index];
+    const stop=stops[index];
+    const [x,z]=paperMap.positions[stop];
     const from=raccoon.body.position;
     const corridor=x>0?1.72:-1.72;
     const approach=z<0?-.41:2.30;
     const path=new THREE.CurvePath();
-    const stops=[[from.x,from.z],[corridor,2.30*mapDepth],[corridor,approach*mapDepth],[x,approach*mapDepth],[x,(z+.55)*mapDepth]];
-    for(let i=1;i<stops.length;i++){
-      const a=new THREE.Vector2(...stops[i-1]),b=new THREE.Vector2(...stops[i]);
+    const waypoints=[[from.x,from.z],[corridor,2.30*mapDepth],[corridor,approach*mapDepth],[x,approach*mapDepth],[x,(z+.55)*mapDepth]];
+    for(let i=1;i<waypoints.length;i++){
+      const a=new THREE.Vector2(...waypoints[i-1]),b=new THREE.Vector2(...waypoints[i]);
       if(a.distanceToSquared(b)>.001)path.add(new THREE.LineCurve(a,b));
     }
-    journey={index,onComplete,started:performance.now(),path};
+    journey={index:stop,onComplete,started:performance.now(),path};
   }
   function moveMap(now){
     if(journey){
@@ -149,9 +152,10 @@ export function createBookScene(canvas){
   function alignDoors(){
     camera.updateMatrixWorld();
     const width=canvas.clientWidth,height=canvas.clientHeight;
-    paperMap.positions.forEach(([x,z],i)=>{
+    stops.forEach((stop,i)=>{
       const label=doorLabels[i];
       if(!label)return;
+      const [x,z]=paperMap.positions[stop];
       projection.set(x,.13,(z+.78)*mapDepth).project(camera);
       label.style.setProperty("--door-x",((projection.x+1)*width/2)+"px");
       label.style.setProperty("--door-y",((1-projection.y)*height/2)+"px");
@@ -173,14 +177,29 @@ export function createBookScene(canvas){
   const hinges=[];
   let current=null, desired=0, fold=0, settle=performance.now(), talking=false, foldStart=0;
   let mode="net", cuboid, cuboidPage;
+  let currentLab, labStep, transition, celebrationStart=-Infinity;
   function clear(){
     group.traverse(obj=>{
       if(obj.isMesh){
         obj.geometry.dispose();
-        for(const material of [obj.material].flat())material.dispose();
+        for(const material of [obj.material].flat()){
+          material.map?.dispose();
+          material.dispose();
+        }
       }
     });
-    group.clear();hinges.length=0;cuboid=null;pair=-1;
+    group.clear();hinges.length=0;cuboid=null;pair=-1;transition=null;
+  }
+  function setDiagram(diagram,lab,step){
+    if(mode==="diagram"&&currentLab===lab&&labStep===step)return;
+    const animate=mode==="diagram"&&currentLab===lab&&!labStep&&diagram.displacement&&!reduced;
+    clear();
+    mode="diagram";current=null;currentLab=lab;labStep=step;
+    const piece=drawGeometryDiagram(group,diagram);
+    if(animate){
+      transition={piece,delta:diagram.displacement,started:performance.now()};
+      positionSlidingPiece(piece,transition.delta,1);
+    }
   }
   function setNet(cells){
     if(current===cells&&mode==="net")return;
@@ -258,7 +277,13 @@ export function createBookScene(canvas){
         cuboid.rotation.y=pair===0?Math.PI/3:pair===1?.36:pair===2?-.31:reduced?.38:t*.50+foldStart;
         cuboid.rotation.x=pair===1?.37:0;
       }
+      if(transition){
+        const fraction=1-THREE.MathUtils.smoothstep(now-transition.started,0,540);
+        positionSlidingPiece(transition.piece,transition.delta,fraction);
+        if(!fraction)transition=null;
+      }
       const cue=reduced?0:Math.max(0,1-(now-settle)/800);
+      const cheer=reduced?0:Math.max(0,1-(now-celebrationStart)/960);
       const viewpoint=atlasShowing?atlasCamera:mapShowing?mapCamera:bookCamera;
       camera.position.lerp(viewpoint,reduced?1:.17);
       const zoom=atlasShowing?Math.min(.93,(camera.top-camera.bottom)/8.5):1;
@@ -271,18 +296,20 @@ export function createBookScene(canvas){
         alignAtlas();
       }else{
         raccoon.body.position.x=3.05+(cue?Math.sin(cue*Math.PI)*.40:0);
-        raccoon.body.position.y=cue*Math.sin(cue*Math.PI)*.24;
+        raccoon.body.position.y=Math.max(cue*.24,cheer*.74)*Math.sin(Math.max(cue,cheer)*Math.PI);
+        raccoon.arms[1].rotation.x=-cheer*1.9;
         raccoon.shadow.position.set(raccoon.body.position.x,.012,raccoon.body.position.z);
       }
       raccoon.head.rotation.x=talking&&!reduced?Math.sin(t*10)*.08:0;
       mouth.scale.y=talking?(reduced?.037:.035+.028*Math.abs(Math.sin(t*12))):.014;
-      raccoon.arms[0].rotation.x=-cue*1.2 + (talking&&!reduced?-.27+Math.sin(t*5)*.18:0);
+      raccoon.arms[0].rotation.x=-Math.max(cue*1.2,cheer*1.9)+(talking&&!reduced?-.27+Math.sin(t*5)*.18:0);
       renderer.render(scene,camera);
       if(!canvas.hasAttribute("data-rendered"))canvas.setAttribute("data-rendered","");
     }
   });
   return {
-    setNet,setCuboid,showMap,showAtlas,visitDoor,inspectPair,
+    setNet,setCuboid,setDiagram,showMap,showAtlas,visitDoor,inspectPair,
+    celebrate(){celebrationStart=performance.now();},
     foldPart(amount){desired=amount;settle=performance.now();},
     fold(next){desired=next?1:0;settle=performance.now();foldStart=next?.8:0;},
     speak(value){talking=value;},

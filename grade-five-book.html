@@ -27,10 +27,11 @@
     <section class="stage" aria-label="كتاب مفتوح عليه مشهد الدرس">
       <canvas id="paper-scene" aria-hidden="true"></canvas>
       <nav id="atlas-pins" aria-label="معالم الخريطة" hidden></nav>
-      <div class="prompt" id="map-prompt" hidden><span id="map-count">٦ أسئلة</span><p>خريطة المجسّمات</p></div>
+      <div class="prompt" id="map-prompt" hidden><span id="map-count"></span><p id="map-title"></p></div>
       <nav id="door-map" aria-label="أبواب خريطة الدرس" hidden></nav>
       <div class="prompt" id="lesson-prompt" hidden><span id="sheet-title"></span><p id="question"></p></div>
-      <div id="fallback" hidden>العرض الثلاثي الأبعاد غير متاح. يمكنك متابعة الرسوم المسطحة والأسئلة.<div id="fallback-figure"></div></div>
+      <div id="fallback" hidden><span>العرض الثلاثي الأبعاد غير متاح.</span><div id="fallback-figure"></div></div>
+      <p id="diagram-description" class="sr-only" hidden></p>
       <div class="scene-tools" id="scene-tools" hidden><button id="fold" type="button" class="quiet">اطوِ الشبكة</button><button id="fold-step" type="button" class="quiet">اطوِ خطوة</button><button id="read" type="button" class="quiet">اسمع السؤال</button></div>
     </section>
     <section id="atlas-summary" class="work" aria-label="معلومات الخريطة">
@@ -38,23 +39,23 @@
       <div id="atlas-cards" class="atlas-cards"></div>
     </section>
     <section id="map-summary" class="work" aria-labelledby="map-task" hidden>
-      <h2 id="map-task">رحلتك بين المجسّمات</h2>
+      <h2 id="map-task"></h2>
       <p id="map-status" class="feedback" role="status">المس المحطة التي تريدها. يمشي الراكون إليها ويفتح السؤال.</p>
       <button id="map-stamp" type="button" class="quiet" hidden>شاهد ختمك ✦</button>
     </section>
     <section id="lesson-work" class="work" aria-labelledby="task" hidden>
       <h2 id="task"></h2>
-      <div id="concept-tools" class="concept-tools" hidden aria-label="افحص زوجًا من الأوجه"></div>
+      <div id="concept-tools" class="concept-tools" hidden role="group" aria-label="أدوات التجربة"></div>
       <p id="concept-note" class="concept-note" role="status" hidden></p>
       <div id="options" class="options"></div>
       <p id="feedback" class="feedback" role="status"></p>
       <p id="audio-status" role="status" hidden></p>
       <div class="work-actions">
+        <button id="check" type="button" disabled>تحقّق</button>
         <button id="hint" type="button" class="quiet">تلميح</button>
         <button id="explain" type="button" class="quiet">اشرح الحل</button>
         <button id="hear" type="button" class="quiet" hidden>اسمع الشرح</button>
         <button id="voice-setup" type="button" class="quiet">صوت الراكون</button>
-        <button id="check" type="button" disabled>تحقّق</button>
       </div>
     </section>
     <footer id="lesson-footer" aria-label="انتقل بين صفحات الدرس" hidden>
@@ -65,16 +66,9 @@
   </div>
   <dialog id="table">
     <div class="modal-head"><h2>فهرس ورّاق</h2><button id="close-index" type="button" class="quiet" aria-label="أغلق الفهرس">×</button></div>
-    <p>الهندسة · المكعب ومتوازي المستطيلات</p>
-    <nav class="index-shortcuts" aria-label="انتقال مباشر إلى صفحة الدرس">
-      <button data-shortcut="0" type="button" class="quiet">اكتشف</button>
-      <button data-shortcut="1" type="button" class="quiet">جرّب</button>
-      <button data-shortcut="2" type="button" class="quiet">طبّق</button>
-      <button data-shortcut="3" type="button" class="quiet">قارن</button>
-      <button data-shortcut="4" type="button" class="quiet">ميّز</button>
-      <button data-shortcut="5" type="button" class="quiet">ركّب</button>
-    </nav>
-    <p id="stamp" class="stamp" hidden>✦ ختم مستكشف المجسّمات</p>
+    <p id="table-lesson"></p>
+    <nav id="lesson-shortcuts" class="index-shortcuts" aria-label="انتقال مباشر إلى صفحة الدرس"></nav>
+    <p id="stamp" class="stamp" hidden></p>
     <button id="restart" type="button">ابدأ محاولة جديدة</button>
   </dialog>
   <dialog id="voice-panel" aria-labelledby="voice-title">
