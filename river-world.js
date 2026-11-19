@@ -27,7 +27,7 @@ const orb = (parent,mat,w,h,d,x,y,z) => {
   const o=mesh(parent,new T.SphereGeometry(1,14,10),mat,x,y,z); o.scale.set(w,h,d); return o;
 };
 
-function makeRaccoon(scene) {
+export function makeRaccoon(scene) {
   const body=new T.Group();
   body.rotation.y=Math.PI-.42;
   scene.add(body);

@@ -1,0 +1,37 @@
+:root{background:#272239;color:#372b47;font-family:Tahoma,Arial,sans-serif;color-scheme:light}
+*{box-sizing:border-box}body{margin:0;min-width:320px;background:radial-gradient(ellipse at 50% -10%,#554666,#2c253e 60%,#221d32)}
+button,a{font:inherit}button{cursor:pointer;min-height:44px;padding:6px 12px;border:1px solid #624869;border-radius:12px;color:#fcf4dc;background:#564267;font-weight:bold}
+button:disabled{opacity:.46;cursor:default}button:focus-visible,a:focus-visible{outline:3px solid #8e62bf;outline-offset:3px}
+[hidden]{display:none!important}
+.quiet{background:#fff6e7;color:#503f63;border-color:#d7c3ae}
+.book-app{width:min(100% - 24px,960px);margin:auto;padding:10px 0 22px}
+header{display:flex;align-items:center;gap:12px;color:#f9edd7;padding:0 2px 11px}
+.brand{font-size:26px;font-weight:bold;text-decoration:none;color:#fff0d1}.brand span{color:#efb786}
+.level{color:#e9cba8;font-size:12px;margin-inline-end:auto}
+.book{border:1px solid #f7dfbb;border-radius:23px;background:#fff6e6;overflow:hidden;box-shadow:0 15px 2px -8px #bfa387,0 18px 32px #150f248f}
+.book-head{display:flex;justify-content:space-between;align-items:center;padding:13px 18px 7px;gap:6px}
+.series{color:#845358;font-size:11px;margin:0 0 5px}h1{font-size:clamp(20px,4vw,30px);line-height:1.2;margin:0}output{color:#734f70;min-width:38px;text-align:center;font-size:13px}
+nav ol{padding:0 17px;margin:3px 0 8px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;list-style:none}
+nav button{width:100%;font-size:11px;min-height:44px;padding-inline:2px;background:#f4e7d4;color:#534070;border-color:#e2ceb3}
+nav [aria-current=page]{background:#e2cde9;border-color:#ad85c4;color:#3e2858}
+.stage{height:clamp(295px,47svh,460px);position:relative;isolation:isolate;border-block:1px solid #d9bda7;background:radial-gradient(ellipse at 65% 55%,#c29086,#584368 77%)}
+#paper-scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+.prompt{position:absolute;inset-inline-start:12px;top:10px;padding:8px 12px;border:1px solid #ebd5bb;border-radius:8px 12px 12px 12px;max-width:calc(100% - 24px);background:#fff6e9;box-shadow:0 5px 15px #24192c66}
+.prompt span{display:block;font-size:10px;font-weight:bold;color:#7f526c}.prompt p{margin:4px 0 0;font-size:14px;font-weight:bold;line-height:1.45}
+.scene-tools{display:flex;gap:6px;position:absolute;bottom:9px;inset-inline-start:10px}.scene-tools button{font-size:12px}
+#fallback{position:absolute;inset:38% 8% auto;background:#f0e3ef;padding:14px;border-radius:11px;font-size:14px;line-height:1.5}
+.work{padding:11px 16px 5px}h2{font-size:15px;margin:0 0 8px}
+.options{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:7px}
+.option{background:#f6e8d7;color:#4b365a;border-color:#d4bdb0;display:flex;align-items:center;gap:7px;justify-content:center;min-width:70px}
+.option[aria-pressed=true]{background:#e8d7f2;border-color:#8e63a4;box-shadow:inset 0 0 0 1px #8e63a4}
+.net-thumb{display:grid;gap:1px;direction:ltr}.net-thumb i{width:8px;height:8px;background:#af7cba;border-radius:1px}
+.feedback{font-size:13px;line-height:1.52;min-height:22px;margin:5px 0 7px;color:#573464}.work-actions{display:flex;gap:6px;flex-wrap:wrap}.work-actions button{font-size:13px}
+footer{padding:8px 16px 10px;display:flex;justify-content:space-between;border-top:1px solid #ebd8be}
+dialog{width:min(92vw,425px);border:1px solid #d8b290;border-radius:18px;background:#fff5e8;color:#4b345e;padding:14px}
+dialog::backdrop{background:#291d36ba}.modal-head{display:flex;justify-content:space-between;align-items:center}.modal-head h2{font-size:21px;margin:0}.stamp{background:#e6d3ed;border:1px dashed #9b73b2;padding:14px;border-radius:9px;font-weight:bold}
+@media(max-width:500px){.book-head{padding:10px 10px 6px}nav ol{padding:0 8px;margin-bottom:5px}.stage{height:clamp(250px,34svh,310px)}.prompt{inset-inline-start:8px;max-width:calc(100% - 16px);padding:6px 8px;top:8px}.prompt p{font-size:13px}.work{padding:9px 10px 5px}footer{padding:7px 10px 9px}}
+#page-number{white-space:nowrap}
+#audio-status{font-size:12px;color:#604b6f;margin:4px 0 7px}
+#fallback-figure{margin-top:7px}
+#fallback-figure .net-thumb{width:max-content;margin:auto}
+#fallback-figure .net-thumb i{width:15px;height:15px}

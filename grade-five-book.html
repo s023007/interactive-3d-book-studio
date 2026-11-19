@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#29243e">
+<title>ورّاق | كتاب الهندسة التفاعلي</title>
+<link rel="stylesheet" href="./grade-five-book.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js"}}</script>
+</head>
+<body>
+<main class="book-app">
+  <header>
+    <a class="brand" href="./adventure.html"><span aria-hidden="true">✦</span> ورّاق</a>
+    <span class="level">رياضيات · الصف الخامس</span>
+    <button id="index" type="button" class="quiet">الفهرس</button>
+  </header>
+  <div class="book">
+    <div class="book-head"><div><p class="series">الهندسة · الصفحتان ٤٠–٤١ من الكتاب المدرسي</p><h1>المكعب ومتوازي المستطيلات</h1></div><output id="page-number"></output></div>
+    <nav aria-label="صفحات الدرس"><ol id="page-tabs"></ol></nav>
+    <section class="stage" aria-label="كتاب مفتوح عليه مشهد الدرس">
+      <canvas id="paper-scene" aria-hidden="true"></canvas>
+      <div class="prompt"><span id="sheet-title"></span><p id="question"></p></div>
+      <div id="fallback" hidden>العرض الثلاثي الأبعاد غير متاح. يمكنك متابعة الرسوم المسطحة والأسئلة.<div id="fallback-figure"></div></div>
+      <div class="scene-tools"><button id="fold" type="button" class="quiet">اطوِ الشبكة</button><button id="read" type="button" class="quiet" aria-label="اسمع السؤال بصوت الجهاز">اسمع السؤال</button></div>
+    </section>
+    <section class="work" aria-labelledby="task">
+      <h2 id="task"></h2>
+      <div id="options" class="options"></div>
+      <p id="feedback" class="feedback" role="status"></p>
+      <p id="audio-status" role="status" hidden></p>
+      <div class="work-actions">
+        <button id="hint" type="button" class="quiet">تلميح</button>
+        <button id="explain" type="button" class="quiet">اشرح الحل</button>
+        <button id="hear" type="button" class="quiet" hidden>اسمع الشرح</button>
+        <button id="check" type="button" disabled>تحقّق</button>
+      </div>
+    </section>
+    <footer aria-label="انتقل بين صفحات الدرس"><button id="back" type="button" class="quiet">→ السابقة</button><button id="next" type="button">التالي ←</button></footer>
+  </div>
+  <dialog id="table">
+    <div class="modal-head"><h2>فهرس ورّاق</h2><button id="close-index" type="button" class="quiet" aria-label="أغلق الفهرس">×</button></div>
+    <p>الهندسة · المكعب ومتوازي المستطيلات</p>
+    <p id="stamp" class="stamp" hidden>✦ ختم مستكشف المجسّمات</p>
+    <button id="restart" type="button">ابدأ محاولة جديدة</button>
+  </dialog>
+  <noscript>يلزم تفعيل JavaScript لفتح الدرس التفاعلي.</noscript>
+</main>
+<script type="module" src="./grade-five-book.js"></script>
+</body>
+</html>
