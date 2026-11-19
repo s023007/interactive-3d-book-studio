@@ -3,6 +3,7 @@ import { narration } from "./grade-five-narration.js";
 const $=id=>document.getElementById(id);
 const digits=new Intl.NumberFormat("ar-OM",{numberingSystem:"arab"});
 const saveKey="warraq.grade-five.cube-stamp.v1";
+const progressKey="warraq.grade-five.cube-progress.v1";
 const letters=["أ","ب","ج"];
 const cross=[[0,0],[-1,0],[1,0],[2,0],[0,-1],[0,1]];
 const overlap=[[0,0],[-1,0],[1,0],[2,0],[-1,-1],[1,-1]];
@@ -37,14 +38,31 @@ let folded=false;
 let hints=0;
 let awarded=false;
 let speaking=false;
+let inMap=true;
+let entering=false;
+const map=$("door-map");
+const doors=[
+  {label:"باب الاكتشاف",page:0},
+  {label:"باب التجربة",page:1},
+  {label:"باب التحدّي",page:2},
+];
 let playing=null;
 let voiceRequest=0;
 const solved=new Set();
 const variants=new Set();
-try{awarded=localStorage.getItem(saveKey)==="earned";}catch{}
+try{
+  awarded=localStorage.getItem(saveKey)==="earned";
+  const saved=JSON.parse(localStorage.getItem(progressKey));
+  if(Array.isArray(saved)){
+    for(const page of saved)if([0,1,2,3].includes(page))solved.add(page);
+  }
+}catch{}
+function saveProgress(){
+  try{localStorage.setItem(progressKey,JSON.stringify([...solved]));}catch{}
+}
 
 function stamp(){
-  $("stamp").hidden=!awarded;
+  $("stamp").hidden=$("map-stamp").hidden=!awarded;
 }
 function speechStop(){
   voiceRequest++;
@@ -118,6 +136,7 @@ function narrate(text){
   clip.play().catch(onFailure);
 }
 function model(){
+  if(inMap)return;
   const p=pages[index];
   if(!scene){
     const figure=$("fallback-figure");
@@ -191,13 +210,65 @@ function draw(){
   }
   showOptions();model();stamp();
 }
+function displayMode(showMap){
+  inMap=showMap;
+  entering=false;
+  document.querySelector(".book").dataset.view=showMap?"map":"lesson";
+  for(const id of ["map-prompt","door-map","map-summary"])$(id).hidden=!showMap;
+  for(const id of ["lesson-tabs","lesson-prompt","scene-tools","lesson-work","lesson-footer","page-number"])$(id).hidden=showMap;
+  $("fallback").hidden=showMap||!rendererFailed;
+}
 function go(next){
   if(next<0||next>=pages.length||next===4&&(!solved.has(2)||!solved.has(3)))return;
   speechStop();
+  displayMode(false);
+  scene?.showMap(false);
   index=next;selected=null;hints=0;folded=index===4;
   draw();
   $("sheet-title").tabIndex=-1;
   $("sheet-title").focus({preventScroll:true});
+}
+let rendererFailed=false;
+const doorButtons=doors.map(({label,page},i)=>{
+  const button=document.createElement("button");
+  button.type="button";button.className="door";
+  const badge=document.createElement("span");
+  badge.ariaHidden="true";
+  const title=document.createElement("strong");
+  title.textContent=label;
+  button.append(badge,title);
+  button.onclick=()=>{
+    if(entering)return;
+    entering=true;
+    button.dataset.opening="";
+    for(const other of doorButtons)other.setAttribute("aria-disabled","true");
+    $("map-status").textContent="يتجه الراكون إلى "+label+".";
+    const open=()=>go(page);
+    if(scene&&!document.hidden)scene.visitDoor(i,open);
+    else open();
+  };
+  map.append(button);
+  return button;
+});
+function showMap(focus=false){
+  speechStop();
+  displayMode(true);
+  if(scene)map.dataset.projected="";
+  else delete map.dataset.projected;
+  doorButtons.forEach((button,i)=>{
+    const {label,page}=doors[i];
+    const complete=i===2?awarded:solved.has(page);
+    button.toggleAttribute("data-complete",complete);
+    button.removeAttribute("data-opening");
+    button.removeAttribute("aria-disabled");
+    button.firstElementChild.textContent=complete?"✓":digits.format(i+1);
+    button.ariaLabel=complete?label+"، مكتمل":label;
+  });
+  $("map-status").textContent=awarded?"ختم مستكشف المجسّمات في فهرسك. اختر بابًا للمراجعة.":
+    "اكتشف الطيّ، جرّب الشبكات، ثم طبّق الفكرة لتحصل على الختم.";
+  scene?.showMap(true,doorButtons);
+  stamp();
+  if(focus)doorButtons[0].focus({preventScroll:true});
 }
 for(const [i,p] of pages.entries()){
   const li=document.createElement("li");
@@ -207,11 +278,14 @@ for(const [i,p] of pages.entries()){
   li.append(button);$("page-tabs").append(li);
 }
 $("back").onclick=()=>go(index-1);
+$("show-map").onclick=()=>showMap(true);
+$("map-stamp").onclick=()=>$("table").showModal();
 $("next").onclick=()=>go(index+1);
 $("fold").onclick=()=>{
   folded=!folded;
   $("fold").textContent=folded?"افتح الشبكة":"اطوِ الشبكة";
   scene?.fold(folded);
+  if(index===0&&folded){solved.add(0);saveProgress();}
 };
 $("read").onclick=()=>narrate($("question").textContent);
 $("hear").onclick=()=>narrate($("feedback").textContent);
@@ -229,6 +303,7 @@ $("explain").onclick=()=>{
     $("fold").textContent="افتح الشبكة";
     model();
     teachingFeedback(p.explain);
+    if(scene){solved.add(0);saveProgress();}
     return;
   }
   if(index===1){
@@ -255,6 +330,7 @@ $("check").onclick=()=>{
     return;
   }
   solved.add(index);
+  saveProgress();
   if(solved.has(2)&&solved.has(3)){
     awarded=true;
     try{localStorage.setItem(saveKey,"earned");}catch{}
@@ -268,13 +344,23 @@ $("check").onclick=()=>{
 };
 $("index").onclick=()=>$("table").showModal();
 $("close-index").onclick=()=>$("table").close();
+for(const shortcut of $("table").querySelectorAll("[data-shortcut]")){
+  shortcut.onclick=()=>{
+    $("table").close();
+    go(Number(shortcut.dataset.shortcut));
+  };
+}
 $("restart").onclick=()=>{
-  solved.clear();variants.clear();$("table").close();go(0);
+  solved.clear();variants.clear();saveProgress();$("table").close();showMap(true);
 };
-draw();
+showMap();
 import("./grade-five-scene.js").then(module=>{
   scene=module.createBookScene($("paper-scene"));
   $("fold").disabled=false;
   scene.speak(speaking);
-  model();
-}).catch(()=>{$("fallback").hidden=false;model();});
+  if(inMap)showMap();
+  else model();
+}).catch(()=>{
+  rendererFailed=true;
+  if(!inMap){$("fallback").hidden=false;model();}
+});

@@ -16,6 +16,10 @@ for(const viewport of [{width:360,height:800},{width:390,height:844},{width:1440
       page.on('pageerror',error=>errors.push(error.message));
       const press=selector=>mobile?page.locator(selector).tap():page.locator(selector).click();
       await page.goto('/grade-five-book.html');
+      await expect(page.locator('#door-map')).toHaveAttribute('data-projected','');
+      await expect(page.locator('.door')).toHaveCount(3);
+      await page.screenshot({path:info.outputPath('paper-map.png')});
+      await press('.door:first-child');
       await expect(page.locator('#fold')).toBeEnabled();
       await expect(page.locator('#fallback')).toBeHidden();
       expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(viewport.width);
@@ -63,6 +67,7 @@ test('keeps the lesson playable with the renderer unavailable and voices absent'
   await page.route('**/assets/grade-five-audio/*.mp3',route=>route.abort());
   await page.addInitScript(()=>{Object.defineProperty(window.speechSynthesis,'getVoices',{value:()=>[]});});
   await page.goto('/grade-five-book.html');
+  await page.locator('.door:first-child').click();
   await expect(page.locator('#fallback')).toBeVisible();
   await page.locator('#read').focus();
   await page.keyboard.press('Enter');
@@ -83,6 +88,7 @@ test('streams Arabic question and hint without any device voices', async ({page}
     };
   });
   await page.goto('/grade-five-book.html');
+  await page.locator('.door:first-child').click();
   await page.locator('#read').click();
   await expect(page.locator('#audio-status')).toContainText('تعمل القراءة');
   await expect.poll(()=>page.evaluate(()=>window.activeBookAudio.currentTime)).toBeGreaterThan(0);
@@ -93,4 +99,26 @@ test('streams Arabic question and hint without any device voices', async ({page}
   await expect(page.locator('#audio-status')).toContainText('تعمل القراءة');
   await expect.poll(()=>page.evaluate(()=>window.activeBookAudio.currentTime)).toBeGreaterThan(0);
   await expect(page.locator('#feedback')).toContainText('المربعات تتصل');
+});
+
+test('walks through a door, marks progress and allows direct review from the index',async({page})=>{
+  await page.goto('/grade-five-book.html');
+  const map=page.locator('#door-map');
+  await expect(map).toHaveAttribute('data-projected','');
+  await page.getByRole('button',{name:'باب التجربة'}).focus();
+  await page.keyboard.press('Enter');
+  await expect(map.locator('[data-opening]')).toHaveCount(1);
+  await expect(page.locator('#map-status')).toContainText('يتجه الراكون');
+  await expect(page.locator('#sheet-title')).toHaveText('أين تذهب الأوجه؟');
+  await expect(map).toBeHidden();
+  await page.locator('[data-option="1"]').click();
+  await page.locator('#check').click();
+  await page.locator('#show-map').click();
+  await expect(page.getByRole('button',{name:'باب التجربة، مكتمل'})).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button',{name:'باب التجربة، مكتمل'})).toBeVisible();
+  await page.locator('#index').click();
+  await page.locator('[data-shortcut="3"]').click();
+  await expect(page.locator('#sheet-title')).toHaveText('أوجه الصندوق');
+  await expect(map).toBeHidden();
 });

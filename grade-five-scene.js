@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { makeRaccoon } from "./river-world.js";
+import { createPaperMap } from "./grade-five-map-scene.js";
 
 const side = 1.03;
 const palette = [0xcd81bd,0xe8a16f,0x84bfc0,0xf4c47c,0xa28eda,0xe29a9c];
@@ -55,6 +56,67 @@ export function createBookScene(canvas){
   // The reused ground shadow belongs to the paper surface in this scene.
   raccoon.shadow.position.set(3.05,.012,.97);
   raccoon.shadow.scale.setScalar(1.3);
+
+  const paperMap=createPaperMap(scene);
+  const home=new THREE.Vector3(3.05,0,.97);
+  const mapHome=new THREE.Vector3(2.64,0,2.13);
+  const bookCamera=new THREE.Vector3(4.6,13.9,14);
+  const mapCamera=new THREE.Vector3(.40,14.8,14.6);
+  const projection=new THREE.Vector3();
+  let mapShowing=false, doorLabels=[], journey=null;
+  function showMap(value,labels=[]){
+    mapShowing=value;
+    doorLabels=labels;
+    journey=null;
+    paperMap.map.visible=value;
+    group.visible=!value;
+    paperMap.doors.forEach(door=>{door.rotation.y=0;});
+    raccoon.body.position.copy(value?mapHome:home);
+    raccoon.body.rotation.y=Math.PI-.22;
+    raccoon.legs.forEach(leg=>{leg.rotation.x=0;});
+    raccoon.arms[1].rotation.x=0;
+    raccoon.body.scale.setScalar(value?1.06:1.32);
+    if(value&&!last){camera.position.copy(mapCamera);camera.lookAt(0,0,.12);alignDoors();}
+  }
+  function visitDoor(index,onComplete){
+    if(reduced){onComplete();return;}
+    const [x,z]=paperMap.positions[index];
+    journey={index,onComplete,started:performance.now(),from:raccoon.body.position.clone(),x,z};
+  }
+  function moveMap(now){
+    if(journey){
+      const {index,from,x,z,started,onComplete}=journey;
+      const seconds=(now-started)/1000;
+      const step=THREE.MathUtils.clamp(seconds/.67,0,1);
+      const across=THREE.MathUtils.smoothstep(step,0,.43);
+      const along=THREE.MathUtils.smoothstep(step,.36,1);
+      raccoon.body.position.x=THREE.MathUtils.lerp(from.x,x,across);
+      raccoon.body.position.z=THREE.MathUtils.lerp(from.z,z+.70,along);
+      const heading=step<.4?(x<from.x?Math.PI/2:-Math.PI/2):0;
+      raccoon.body.rotation.y=heading;
+      const pace=seconds*25;
+      raccoon.legs.forEach((leg,i)=>{leg.rotation.x=Math.sin(pace)*(i?1:-1)*.57*(1-step);});
+      raccoon.body.position.y=step<1?Math.abs(Math.sin(pace))*.095*(1-step):0;
+      raccoon.arms[1].rotation.x=-THREE.MathUtils.smoothstep(seconds,.60,.82)*.95;
+      paperMap.doors[index].rotation.y=-THREE.MathUtils.smoothstep(seconds,.64,1.01)*1.72;
+      if(seconds>=1.10){
+        journey=null;
+        onComplete();
+      }
+    }
+    raccoon.shadow.position.set(raccoon.body.position.x,.012,raccoon.body.position.z);
+  }
+  function alignDoors(){
+    camera.updateMatrixWorld();
+    const width=canvas.clientWidth,height=canvas.clientHeight;
+    paperMap.positions.forEach(([x,z],i)=>{
+      const label=doorLabels[i];
+      if(!label)return;
+      projection.set(x,.11,z+.82).project(camera);
+      label.style.setProperty("--door-x",((projection.x+1)*width/2)+"px");
+      label.style.setProperty("--door-y",((1-projection.y)*height/2)+"px");
+    });
+  }
 
   const group=new THREE.Group();scene.add(group);
   const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -128,15 +190,23 @@ export function createBookScene(canvas){
       }
       if(cuboid)cuboid.rotation.y=reduced?.38:t*.50+foldStart;
       const cue=reduced?0:Math.max(0,1-(now-settle)/800);
-      raccoon.body.position.x=3.05+(cue?Math.sin(cue*Math.PI)*.40:0);
-      raccoon.body.position.y=cue*Math.sin(cue*Math.PI)*.24;
+      camera.position.lerp(mapShowing?mapCamera:bookCamera,reduced?1:.17);
+      camera.lookAt(0,0,.12);
+      if(mapShowing){
+        moveMap(now);
+        alignDoors();
+      }else{
+        raccoon.body.position.x=3.05+(cue?Math.sin(cue*Math.PI)*.40:0);
+        raccoon.body.position.y=cue*Math.sin(cue*Math.PI)*.24;
+        raccoon.shadow.position.set(raccoon.body.position.x,.012,raccoon.body.position.z);
+      }
       raccoon.head.rotation.x=talking&&!reduced?Math.sin(t*10)*.08:0;
       raccoon.arms[0].rotation.x=-cue*1.2 + (talking&&!reduced?-.27+Math.sin(t*5)*.18:0);
       renderer.render(scene,camera);
     }
   });
   return {
-    setNet,setCuboid,
+    setNet,setCuboid,showMap,visitDoor,
     fold(next){desired=next?1:0;settle=performance.now();foldStart=next?.8:0;},
     speak(value){talking=value;},
   };
