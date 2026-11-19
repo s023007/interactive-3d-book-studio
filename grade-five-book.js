@@ -1,3 +1,5 @@
+import { narration } from "./grade-five-narration.js";
+
 const $=id=>document.getElementById(id);
 const digits=new Intl.NumberFormat("ar-OM",{numberingSystem:"arab"});
 const saveKey="warraq.grade-five.cube-stamp.v1";
@@ -35,6 +37,8 @@ let folded=false;
 let hints=0;
 let awarded=false;
 let speaking=false;
+let playing=null;
+let voiceRequest=0;
 const solved=new Set();
 const variants=new Set();
 try{awarded=localStorage.getItem(saveKey)==="earned";}catch{}
@@ -43,6 +47,9 @@ function stamp(){
   $("stamp").hidden=!awarded;
 }
 function speechStop(){
+  voiceRequest++;
+  playing?.pause();
+  playing=null;
   window.speechSynthesis?.cancel();
   speaking=false;
   scene?.speak(false);
@@ -57,20 +64,58 @@ function teachingFeedback(text){
   $("feedback").textContent=text;
   $("hear").hidden=!text;
 }
-function narrate(text){
-  speechStop();
+function speakingNow(value){
+  speaking=value;
+  scene?.speak(value);
+}
+function deviceNarration(text,request){
   const synth=window.speechSynthesis;
   const voice=synth?.getVoices().find(item=>/^ar($|-|_)/i.test(item.lang));
   if(!voice||!window.SpeechSynthesisUtterance){
-    voiceStatus("لا يتوفر صوت عربي على هذا الجهاز. النص معروض على الصفحة.");
+    voiceStatus("تعذّر تشغيل الصوت. النص معروض على الصفحة.");
     return;
   }
   const line=new SpeechSynthesisUtterance(text);
   line.voice=voice;line.lang=voice.lang;line.rate=.92;
-  line.onstart=()=>{speaking=true;scene?.speak(true);};
-  line.onend=line.onerror=()=>{speaking=false;scene?.speak(false);};
+  line.onstart=()=>{if(request===voiceRequest)speakingNow(true);};
+  line.onend=()=>{if(request===voiceRequest)speakingNow(false);};
+  line.onerror=()=>{
+    if(request!==voiceRequest)return;
+    speakingNow(false);
+    voiceStatus("تعذّر تشغيل الصوت. النص معروض على الصفحة.");
+  };
   synth.speak(line);
   voiceStatus("قراءة بصوت الجهاز الاصطناعي.");
+}
+function narrate(text){
+  speechStop();
+  const request=voiceRequest;
+  const file=narration.get(text);
+  if(!file){deviceNarration(text,request);return;}
+  const clip=new Audio(new URL("./assets/grade-five-audio/"+file,import.meta.url));
+  playing=clip;
+  const onFailure=()=>{
+    if(request!==voiceRequest||playing!==clip)return;
+    playing=null;
+    speakingNow(false);
+    deviceNarration(text,request);
+  };
+  clip.addEventListener("playing",()=>{
+    if(request!==voiceRequest)return;
+    speakingNow(true);
+    voiceStatus("تعمل القراءة العربية الاصطناعية الآن.");
+  });
+  clip.addEventListener("waiting",()=>{
+    if(request===voiceRequest)speakingNow(false);
+  });
+  clip.addEventListener("ended",()=>{
+    if(request!==voiceRequest)return;
+    playing=null;
+    speakingNow(false);
+    voiceStatus("");
+  });
+  clip.addEventListener("error",onFailure,{once:true});
+  clip.play().catch(onFailure);
 }
 function model(){
   const p=pages[index];

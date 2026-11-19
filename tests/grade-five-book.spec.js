@@ -60,14 +60,37 @@ for(const viewport of [{width:360,height:800},{width:390,height:844},{width:1440
 
 test('keeps the lesson playable with the renderer unavailable and voices absent',async({page})=>{
   await page.route('https://cdn.jsdelivr.net/npm/three@0.174.0/build/**',route=>route.abort());
+  await page.route('**/assets/grade-five-audio/*.mp3',route=>route.abort());
   await page.addInitScript(()=>{Object.defineProperty(window.speechSynthesis,'getVoices',{value:()=>[]});});
   await page.goto('/grade-five-book.html');
   await expect(page.locator('#fallback')).toBeVisible();
   await page.locator('#read').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('#audio-status')).toContainText('لا يتوفر صوت عربي');
+  await expect(page.locator('#audio-status')).toContainText('تعذّر تشغيل الصوت');
   await page.locator('[data-page="2"]').click();
   await page.locator('[data-option="0"]').click();
   await page.locator('#check').click();
   await expect(page.locator('#feedback')).toContainText('صحيح');
+});
+
+test('streams Arabic question and hint without any device voices', async ({page})=>{
+  await page.addInitScript(()=>{
+    Object.defineProperty(window.speechSynthesis,'getVoices',{value:()=>[]});
+    const AudioElement=window.Audio;
+    window.Audio=function(source){
+      window.activeBookAudio=new AudioElement(source);
+      return window.activeBookAudio;
+    };
+  });
+  await page.goto('/grade-five-book.html');
+  await page.locator('#read').click();
+  await expect(page.locator('#audio-status')).toContainText('تعمل القراءة');
+  await expect.poll(()=>page.evaluate(()=>window.activeBookAudio.currentTime)).toBeGreaterThan(0);
+  await page.evaluate(()=>{window.priorBookAudio=window.activeBookAudio;});
+  await page.locator('#hint').click();
+  await expect.poll(()=>page.evaluate(()=>window.priorBookAudio.paused)).toBe(true);
+  await page.locator('#hear').click();
+  await expect(page.locator('#audio-status')).toContainText('تعمل القراءة');
+  await expect.poll(()=>page.evaluate(()=>window.activeBookAudio.currentTime)).toBeGreaterThan(0);
+  await expect(page.locator('#feedback')).toContainText('المربعات تتصل');
 });
