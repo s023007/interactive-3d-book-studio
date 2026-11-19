@@ -67,3 +67,45 @@ nav ol{grid-template-columns:repeat(7,minmax(0,1fr))}
   .door strong{font-size:11px}
   nav button{font-size:10px}
 }
+
+/* Atlas pages keep route controls legible across the folds of the paper. */
+.atlas-trail{display:flex;align-items:center;gap:7px;padding:0 17px 9px;color:#806d59}
+.atlas-trail button{width:auto;min-height:36px;padding-inline:10px;font-size:12px}
+.atlas-trail [aria-current=step]{background:#3e694f;color:#fff2d6;border-color:#315442}
+.atlas-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.atlas-cards button{width:100%;min-width:0;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;text-align:start;color:#27382e;background:#fff2da;border-color:#c5b68c;box-shadow:0 2px 0 #e7d7b5;border-radius:10px;padding:8px 11px}
+.atlas-cards button:focus-visible{outline-color:#0e573c}
+.atlas-cards b{font-size:13px;line-height:1.45}.atlas-cards small{display:block;font-size:10px;color:#536c5c;margin-top:3px}
+.atlas-number{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#d9e4c5;color:#375741;font-size:12px}
+.book[data-view=atlas] .stage,.book[data-view=unit] .stage,.book[data-view=outline] .stage{height:clamp(290px,46svh,455px);background:radial-gradient(ellipse at 51% 46%,#96ada0,#2e4948 76%)}
+.book[data-view=atlas] .atlas-cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+.book[data-view=unit] .atlas-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+.atlas-cards .featured{background:#f6d999;border-color:#6f6840}
+#atlas-pins{position:absolute;inset:0;pointer-events:none}
+#atlas-pins button{position:absolute;left:var(--pin-x);top:var(--pin-y);transform:translate(-50%,-55%);pointer-events:auto;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:none;color:#344c3d;font-size:13px}
+#atlas-pins button span{display:grid;width:28px;height:28px;margin:auto;place-items:center;border:2px solid #fff4d7;border-radius:50%;background:#e5e9c5;box-shadow:0 3px 8px #23332275}
+#atlas-pins button.featured span{background:#f4cd7f;color:#51321d}
+#atlas-pins button:is(:hover,:focus-visible) span{background:#fff1ba}
+#atlas-summary{padding-block-end:12px}
+.atlas-cards .outline-card{grid-column:1/-1;align-self:end;padding:14px;border-radius:12px;background:#f7ead3;border:1px solid #bca987;color:#39453b}
+.outline-card h2{margin-bottom:4px}
+.outline-card p{font-size:13px;line-height:1.55;margin:3px 0}
+.concept-tools{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+.concept-tools button{font-size:12px}.concept-tools button[aria-pressed=true]{background:#d6e6c9;border-color:#8eaa78}
+.concept-note{font-size:12px;color:#47604c;margin:2px 0 7px}
+#voice-panel label{display:block;margin-block-start:10px;font-size:13px}
+#voice-panel input,#voice-panel select{max-width:100%;min-height:44px;margin-block:4px;color:#3d3144}
+#voice-script{padding:10px;background:#f1e4d2;border-radius:10px;line-height:1.6}
+#voice-panel-status{font-size:13px;line-height:1.5}
+@media(max-width:560px){
+  .atlas-cards{gap:6px}
+  .book[data-view=atlas] .atlas-cards,.book[data-view=unit] .atlas-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .atlas-cards button{gap:5px;padding:6px}.atlas-cards b{font-size:12px}
+  .atlas-trail{padding-inline:10px}
+  .atlas-trail button{min-height:44px}
+  .scene-tools button{font-size:11px;padding-inline:7px}
+}
+
+#voice-panel input[type=checkbox]{min-height:0;margin-inline-end:4px}
+
+@media(max-width:560px){.book-app:has(#index:not([hidden])) .level{display:none}.book-app:has(#index:not([hidden])) .brand{margin-inline-end:auto}}

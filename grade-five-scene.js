@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { makeRaccoon } from "./river-world.js";
-import { createPaperMap } from "./grade-five-map-scene.js";
+import { createPaperMap, createAtlasTerrain } from "./grade-five-map-scene.js";
 
 const side = 1.03;
 const palette = [0xcd81bd,0xe8a16f,0x84bfc0,0xf4c47c,0xa28eda,0xe29a9c];
@@ -50,6 +50,10 @@ export function createBookScene(canvas){
   box(book,[.037,.008,5.90],surface(0xc9a68e),0,.006,0);
   box(book,[.27,.034,1.30],surface(0xd67483),2.22,-.057,3.01);
   const raccoon=makeRaccoon(scene);
+  const mouth=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),surface(0x50343c));
+  mouth.position.set(0,-.176,-.485);
+  mouth.scale.set(.086,.015,.023);
+  raccoon.head.add(mouth);
   raccoon.body.position.set(3.05,0,.97);
   raccoon.body.scale.setScalar(1.32);
   raccoon.body.rotation.y=Math.PI-.22;
@@ -58,15 +62,20 @@ export function createBookScene(canvas){
   raccoon.shadow.scale.setScalar(1.3);
 
   const paperMap=createPaperMap(scene);
+  const atlas=createAtlasTerrain(scene);
   const home=new THREE.Vector3(3.05,0,.97);
   const mapDepth=1.55;
   const mapHome=new THREE.Vector3(1.37,0,2.66*mapDepth);
   paperMap.map.scale.z=mapDepth;
   const bookCamera=new THREE.Vector3(4.6,13.9,14);
   const mapCamera=new THREE.Vector3(.12,23,10.6);
+  const atlasCamera=new THREE.Vector3(2.7,17,12.5);
   const projection=new THREE.Vector3();
-  let mapShowing=false, doorLabels=[], journey=null;
+  let mapShowing=false, atlasShowing=false, doorLabels=[], atlasLabels=[], journey=null;
+  let pair=-1;
   function showMap(value,labels=[]){
+    atlasShowing=false;
+    atlas.world.visible=false;
     mapShowing=value;
     doorLabels=labels;
     journey=null;
@@ -80,6 +89,26 @@ export function createBookScene(canvas){
     raccoon.arms[1].rotation.x=0;
     raccoon.body.scale.setScalar(value?1.20:1.32);
     if(value&&!last){camera.position.copy(mapCamera);camera.lookAt(0,0,.12);alignDoors();}
+  }
+  function showAtlas(view,unit,labels){
+    showMap(false);
+    atlasShowing=true;
+    atlas.present(view,unit);
+    const indexStops=[[2.75,1.6],[2.65,-1.20],[-2.45,1.5],[-2.1,-1.36]];
+    const columns=labels.length>9?4:3;
+    atlasLabels=labels.map((label,i)=>{
+      const grid=[3.9-(i%columns)*7.65/(columns-1),-1.63+Math.floor(i/columns)*1.68];
+      const [x,z]=view==="index"?indexStops[i]:grid;
+      return {label,x,z};
+    });
+    labels.forEach(label=>{label.hidden=true;});
+    book.scale.z=1.48;
+    group.visible=false;
+    raccoon.body.position.set(2.65,0,3.23);
+    raccoon.body.rotation.y=Math.PI-.17;
+    raccoon.body.scale.setScalar(1.09);
+    raccoon.shadow.position.set(2.65,.012,3.23);
+    if(!last){camera.position.copy(atlasCamera);camera.lookAt(0,0,.12);}
   }
   function visitDoor(index,onComplete){
     if(reduced){onComplete();return;}
@@ -128,12 +157,22 @@ export function createBookScene(canvas){
       label.style.setProperty("--door-y",((1-projection.y)*height/2)+"px");
     });
   }
+  function alignAtlas(){
+    camera.updateMatrixWorld();
+    const width=canvas.clientWidth,height=canvas.clientHeight;
+    for(const {label,x,z} of atlasLabels){
+      projection.set(x,.38,z*1.48).project(camera);
+      label.style.setProperty("--pin-x",((projection.x+1)*width/2)+"px");
+      label.style.setProperty("--pin-y",((1-projection.y)*height/2)+"px");
+      label.hidden=false;
+    }
+  }
 
   const group=new THREE.Group();scene.add(group);
   const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
   const hinges=[];
   let current=null, desired=0, fold=0, settle=performance.now(), talking=false, foldStart=0;
-  let mode="net", cuboid;
+  let mode="net", cuboid, cuboidPage;
   function clear(){
     group.traverse(obj=>{
       if(obj.isMesh){
@@ -141,7 +180,7 @@ export function createBookScene(canvas){
         for(const material of [obj.material].flat())material.dispose();
       }
     });
-    group.clear();hinges.length=0;cuboid=null;
+    group.clear();hinges.length=0;cuboid=null;pair=-1;
   }
   function setNet(cells){
     if(current===cells&&mode==="net")return;
@@ -166,13 +205,26 @@ export function createBookScene(canvas){
     addFace(group,originX,originZ,0);
   }
   function setCuboid(page){
-    clear();mode="cuboid";current=null;desired=fold=0;
+    if(mode==="cuboid"&&cuboidPage===page)return;
+    clear();mode="cuboid";cuboidPage=page;current=null;desired=fold=0;
     group.position.set(page===4?-1.44:-2.45,1.0,.08);
-    cuboid=new THREE.Mesh(new THREE.BoxGeometry(2.35,1.34,1.46),
+    const boxSize=page===5?[2.4,1.2,1.8]:[2.35,1.34,1.46];
+    cuboid=new THREE.Mesh(new THREE.BoxGeometry(...boxSize),
       [0xce8bbd,0xce8bbd,0xf0b472,0xf0b472,0x9dbfc7,0x9dbfc7].map(color=>surface(color)));
     group.add(cuboid);
     if(page===4){
       box(group,[1.14,1.14,1.14],surface(0xcc9ec8),-2.10,-.33,.05);
+    }
+  }
+  function inspectPair(index){
+    pair=index;
+    if(cuboid){
+      cuboid.material.forEach((material,i)=>{
+        material.emissive.setHex(Math.floor(i/2)===index?0x57362a:0);
+        material.emissiveIntensity=.65;
+        material.opacity=index<0||Math.floor(i/2)===index?1:.28;
+        material.transparent=material.opacity<1;
+      });
     }
   }
   function resize(){
@@ -202,25 +254,36 @@ export function createBookScene(canvas){
         const angle=(Math.PI/2)*THREE.MathUtils.smoothstep(amount,0,1);
         hinge.rotation.z=dx*angle;hinge.rotation.x=-dz*angle;
       }
-      if(cuboid)cuboid.rotation.y=reduced?.38:t*.50+foldStart;
+      if(cuboid){
+        cuboid.rotation.y=pair===0?Math.PI/3:pair===1?.36:pair===2?-.31:reduced?.38:t*.50+foldStart;
+        cuboid.rotation.x=pair===1?.37:0;
+      }
       const cue=reduced?0:Math.max(0,1-(now-settle)/800);
-      camera.position.lerp(mapShowing?mapCamera:bookCamera,reduced?1:.17);
+      const viewpoint=atlasShowing?atlasCamera:mapShowing?mapCamera:bookCamera;
+      camera.position.lerp(viewpoint,reduced?1:.17);
+      const zoom=atlasShowing?Math.min(.93,(camera.top-camera.bottom)/8.5):1;
+      if(camera.zoom!==zoom){camera.zoom=zoom;camera.updateProjectionMatrix();}
       camera.lookAt(0,0,.12);
       if(mapShowing){
         moveMap(now);
         alignDoors();
+      }else if(atlasShowing){
+        alignAtlas();
       }else{
         raccoon.body.position.x=3.05+(cue?Math.sin(cue*Math.PI)*.40:0);
         raccoon.body.position.y=cue*Math.sin(cue*Math.PI)*.24;
         raccoon.shadow.position.set(raccoon.body.position.x,.012,raccoon.body.position.z);
       }
       raccoon.head.rotation.x=talking&&!reduced?Math.sin(t*10)*.08:0;
+      mouth.scale.y=talking?(reduced?.037:.035+.028*Math.abs(Math.sin(t*12))):.014;
       raccoon.arms[0].rotation.x=-cue*1.2 + (talking&&!reduced?-.27+Math.sin(t*5)*.18:0);
       renderer.render(scene,camera);
+      if(!canvas.hasAttribute("data-rendered"))canvas.setAttribute("data-rendered","");
     }
   });
   return {
-    setNet,setCuboid,showMap,visitDoor,
+    setNet,setCuboid,showMap,showAtlas,visitDoor,inspectPair,
+    foldPart(amount){desired=amount;settle=performance.now();},
     fold(next){desired=next?1:0;settle=performance.now();foldStart=next?.8:0;},
     speak(value){talking=value;},
   };

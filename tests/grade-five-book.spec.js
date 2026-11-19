@@ -7,15 +7,24 @@ test.beforeEach(async({page})=>{
   }));
 });
 
-for(const viewport of [{width:360,height:800},{width:390,height:844},{width:1440,height:900}]){
+async function openGeometry(page){
+  const cards=page.locator('#atlas-cards');
+  await cards.getByRole('button',{name:/الهندسة.*هضبة الهندسة/}).click();
+  await cards.getByRole('button',{name:/المكعب ومتوازي المستطيلات/}).click();
+}
+for(const viewport of [{width:360,height:800},{width:390,height:844},{width:768,height:1024},{width:1440,height:900}]){
   test.describe('grade-five '+viewport.width,()=>{
     const mobile=viewport.width<500;
     test.use({viewport,hasTouch:mobile,isMobile:mobile});
     test('folds a net, retries, solves independent exercises and keeps the stamp',async({page},info)=>{
+      if(!mobile)test.setTimeout(105000);
       const errors=[];
       page.on('pageerror',error=>errors.push(error.message));
       const press=selector=>mobile?page.locator(selector).tap():page.locator(selector).click();
       await page.goto('/grade-five-book.html');
+      await expect(page.locator('#paper-scene')).toHaveAttribute('data-rendered','');
+      if(viewport.width===390)await page.screenshot({path:info.outputPath('index-atlas.png')});
+      await openGeometry(page);
       await expect(page.locator('#door-map')).toHaveAttribute('data-projected','');
       await expect(page.locator('.door')).toHaveCount(6);
       await expect(page.locator('#map-count')).toContainText('٦ أسئلة');
@@ -26,6 +35,8 @@ for(const viewport of [{width:360,height:800},{width:390,height:844},{width:1440
       await expect(page.locator('#fallback')).toBeHidden();
       expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(viewport.width);
       await page.screenshot({path:info.outputPath('open-book.png')});
+      await press('#fold-step');
+      await expect(page.locator('#feedback')).toContainText('الحواف المشتركة');
       await press('#fold');
       await expect(page.locator('#fold')).toHaveText('افتح الشبكة');
       await page.screenshot({path:info.outputPath('folded-book.png')});
@@ -58,6 +69,8 @@ for(const viewport of [{width:360,height:800},{width:390,height:844},{width:1440
       await expect(page.locator('#feedback')).toContainText('صحيح');
       await press('#next');
       await expect(page.locator('#sheet-title')).toHaveText('ألواح متوازي المستطيلات');
+      await press('#concept-tools button:last-child');
+      await expect(page.locator('#concept-note')).toContainText('يطابق');
       await press('[data-option="2"]');
       await press('#check');
       await expect(page.locator('#feedback')).toContainText('صحيح');
@@ -67,6 +80,7 @@ for(const viewport of [{width:360,height:800},{width:390,height:844},{width:1440
       await expect(page.locator('#stamp')).toBeVisible();
       await page.screenshot({path:info.outputPath('stamp.png')});
       await page.reload();
+      await openGeometry(page);
       await press('#index');
       await expect(page.locator('#stamp')).toBeVisible();
       expect(errors).toEqual([]);
@@ -79,11 +93,12 @@ test('keeps the lesson playable with the renderer unavailable and voices absent'
   await page.route(/\/assets\/grade-five-audio\/.*\.mp3(?:\?.*)?$/,route=>route.abort());
   await page.addInitScript(()=>{Object.defineProperty(window.speechSynthesis,'getVoices',{value:()=>[]});});
   await page.goto('/grade-five-book.html');
+  await openGeometry(page);
   await page.locator('.door:first-child').click();
   await expect(page.locator('#fallback')).toBeVisible();
   await page.locator('#read').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('#audio-status')).toContainText('تعذّر تشغيل الصوت');
+  await expect(page.locator('#audio-status')).toContainText('لا يوجد تسجيل قابل للتشغيل');
   await page.locator('[data-page="2"]').click();
   await page.locator('[data-option="0"]').click();
   await page.locator('#check').click();
@@ -93,6 +108,7 @@ test('keeps the lesson playable with the renderer unavailable and voices absent'
 test('streams Arabic question and hint without any device voices', async ({page})=>{
   await page.addInitScript(()=>{
     Object.defineProperty(window.speechSynthesis,'getVoices',{value:()=>[]});
+    localStorage.setItem('warraq.book.allow-synthetic','yes');
     const AudioElement=window.Audio;
     window.Audio=function(source){
       window.activeBookAudio=new AudioElement(source);
@@ -100,6 +116,7 @@ test('streams Arabic question and hint without any device voices', async ({page}
     };
   });
   await page.goto('/grade-five-book.html');
+  await openGeometry(page);
   await page.locator('.door:first-child').click();
   await page.locator('#read').click();
   await expect(page.locator('#audio-status')).toContainText('تعمل القراءة');
@@ -115,6 +132,7 @@ test('streams Arabic question and hint without any device voices', async ({page}
 
 test('walks through a door, marks progress and allows direct review from the index',async({page})=>{
   await page.goto('/grade-five-book.html');
+  await openGeometry(page);
   const map=page.locator('#door-map');
   await expect(map).toHaveAttribute('data-projected','');
   await page.getByRole('button',{name:'باب التجربة'}).focus();
@@ -128,6 +146,7 @@ test('walks through a door, marks progress and allows direct review from the ind
   await page.locator('#show-map').click();
   await expect(page.getByRole('button',{name:'باب التجربة، مكتمل'})).toBeVisible();
   await page.reload();
+  await openGeometry(page);
   await expect(page.getByRole('button',{name:'باب التجربة، مكتمل'})).toBeVisible();
   await page.locator('#index').click();
   await page.locator('[data-shortcut="3"]').click();
@@ -138,8 +157,41 @@ test('walks through a door, marks progress and allows direct review from the ind
 test('opens the last question from the overview without walking the preceding route',async({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.goto('/grade-five-book.html');
+  await openGeometry(page);
   await page.getByRole('button',{name:'ألواح الصندوق'}).click();
   await expect(page.locator('#sheet-title')).toHaveText('ألواح متوازي المستطيلات');
   await page.locator('#show-map').click();
   await expect(page.locator('#map-count')).toContainText('٠ مكتملة');
+});
+
+test('opens maps for the index and unit and saves a local recording for the current line',async({page},info)=>{
+  test.setTimeout(105000);
+  await page.setViewportSize({width:1440,height:900});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.addInitScript(()=>{Object.defineProperty(window.speechSynthesis,'getVoices',{value:()=>[]});});
+  await page.goto('/grade-five-book.html');
+  await expect(page.locator('#book-title')).toHaveText('أطلس الرياضيات');
+  await expect(page.locator('#atlas-cards button')).toHaveCount(4);
+  await expect(page.locator('#paper-scene')).toHaveAttribute('data-rendered','');
+  await page.screenshot({path:info.outputPath('index-atlas.png')});
+  await page.getByRole('button',{name:'معلم الهندسة',exact:true}).click();
+  await expect(page.locator('#book-title')).toHaveText('خريطة الهندسة');
+  await expect(page.locator('#atlas-cards button')).toHaveCount(5);
+  await expect(page.getByRole('button',{name:'معلم الخطوط المتوازية والمتعامدة',exact:true})).toBeVisible();
+  await page.screenshot({path:info.outputPath('geometry-unit.png')});
+  await page.getByRole('button',{name:'معلم الخطوط المتوازية والمتعامدة',exact:true}).click();
+  await expect(page.locator('#atlas-note')).toContainText('قيد الإعداد');
+  await page.locator('#trail-unit').click();
+  await page.getByRole('button',{name:'معلم المكعب ومتوازي المستطيلات',exact:true}).click();
+  await page.locator('.door:first-child').click();
+  await page.locator('#voice-setup').click();
+  await expect(page.locator('#voice-script')).toContainText('كم وجهًا');
+  await page.locator('#voice-file').setInputFiles('assets/grade-five-audio/01.mp3');
+  await expect(page.locator('#voice-panel-status')).toContainText('حُفظ التسجيل');
+  await page.locator('#voice-close').click();
+  await page.reload();
+  await openGeometry(page);
+  await page.locator('.door:first-child').click();
+  await page.locator('#read').click();
+  await expect(page.locator('#audio-status')).toContainText('يعمل التسجيل المحفوظ');
 });

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#29243e">
-<title>ورّاق | كتاب الهندسة التفاعلي</title>
+<title>ورّاق | أطلس الرياضيات التفاعلي</title>
 <link rel="stylesheet" href="./grade-five-book.css">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js"}}</script>
 </head>
@@ -13,26 +13,39 @@
   <header>
     <a class="brand" href="./adventure.html"><span aria-hidden="true">✦</span> ورّاق</a>
     <span class="level">رياضيات · الصف الخامس</span>
-    <button id="index" type="button" class="quiet">الفهرس</button>
+    <button id="atlas-home" type="button" class="quiet">خريطة الفهرس</button>
+    <button id="index" type="button" class="quiet" hidden>الأسئلة</button>
   </header>
-  <div class="book" data-view="map">
-    <div class="book-head"><div><p class="series">الهندسة · الصفحتان ٤٠–٤١ من الكتاب المدرسي</p><h1>المكعب ومتوازي المستطيلات</h1></div><output id="page-number"></output></div>
+  <div class="book" data-view="atlas">
+    <div class="book-head"><div><p class="series" id="book-series">الفصل الدراسي الأول · الصف الخامس</p><h1 id="book-title">أطلس الرياضيات</h1></div><output id="page-number" hidden></output></div>
+    <nav class="atlas-trail" aria-label="مستويات الخرائط">
+      <button id="trail-index" type="button">الفهرس</button><span aria-hidden="true">←</span>
+      <button id="trail-unit" type="button" disabled>الوحدة</button><span aria-hidden="true">←</span>
+      <button id="trail-lesson" type="button" disabled>الدرس</button>
+    </nav>
     <nav id="lesson-tabs" aria-label="صفحات الدرس" hidden><ol id="page-tabs"></ol></nav>
     <section class="stage" aria-label="كتاب مفتوح عليه مشهد الدرس">
       <canvas id="paper-scene" aria-hidden="true"></canvas>
-      <div class="prompt" id="map-prompt"><span id="map-count">٦ أسئلة</span><p>خريطة المجسّمات</p></div>
-      <nav id="door-map" aria-label="أبواب خريطة الدرس"></nav>
+      <nav id="atlas-pins" aria-label="معالم الخريطة" hidden></nav>
+      <div class="prompt" id="map-prompt" hidden><span id="map-count">٦ أسئلة</span><p>خريطة المجسّمات</p></div>
+      <nav id="door-map" aria-label="أبواب خريطة الدرس" hidden></nav>
       <div class="prompt" id="lesson-prompt" hidden><span id="sheet-title"></span><p id="question"></p></div>
       <div id="fallback" hidden>العرض الثلاثي الأبعاد غير متاح. يمكنك متابعة الرسوم المسطحة والأسئلة.<div id="fallback-figure"></div></div>
-      <div class="scene-tools" id="scene-tools" hidden><button id="fold" type="button" class="quiet">اطوِ الشبكة</button><button id="read" type="button" class="quiet" aria-label="اسمع السؤال بقراءة اصطناعية">اسمع السؤال</button></div>
+      <div class="scene-tools" id="scene-tools" hidden><button id="fold" type="button" class="quiet">اطوِ الشبكة</button><button id="fold-step" type="button" class="quiet">اطوِ خطوة</button><button id="read" type="button" class="quiet">اسمع السؤال</button></div>
     </section>
-    <section id="map-summary" class="work" aria-labelledby="map-task">
+    <section id="atlas-summary" class="work" aria-label="معلومات الخريطة">
+      <p id="atlas-note" class="feedback" role="status"></p>
+      <div id="atlas-cards" class="atlas-cards"></div>
+    </section>
+    <section id="map-summary" class="work" aria-labelledby="map-task" hidden>
       <h2 id="map-task">رحلتك بين المجسّمات</h2>
       <p id="map-status" class="feedback" role="status">المس المحطة التي تريدها. يمشي الراكون إليها ويفتح السؤال.</p>
       <button id="map-stamp" type="button" class="quiet" hidden>شاهد ختمك ✦</button>
     </section>
     <section id="lesson-work" class="work" aria-labelledby="task" hidden>
       <h2 id="task"></h2>
+      <div id="concept-tools" class="concept-tools" hidden aria-label="افحص زوجًا من الأوجه"></div>
+      <p id="concept-note" class="concept-note" role="status" hidden></p>
       <div id="options" class="options"></div>
       <p id="feedback" class="feedback" role="status"></p>
       <p id="audio-status" role="status" hidden></p>
@@ -40,6 +53,7 @@
         <button id="hint" type="button" class="quiet">تلميح</button>
         <button id="explain" type="button" class="quiet">اشرح الحل</button>
         <button id="hear" type="button" class="quiet" hidden>اسمع الشرح</button>
+        <button id="voice-setup" type="button" class="quiet">صوت الراكون</button>
         <button id="check" type="button" disabled>تحقّق</button>
       </div>
     </section>
@@ -62,6 +76,21 @@
     </nav>
     <p id="stamp" class="stamp" hidden>✦ ختم مستكشف المجسّمات</p>
     <button id="restart" type="button">ابدأ محاولة جديدة</button>
+  </dialog>
+  <dialog id="voice-panel" aria-labelledby="voice-title">
+    <div class="modal-head"><h2 id="voice-title">صوت الراكون</h2><button id="voice-close" type="button" class="quiet" aria-label="إغلاق إعدادات الصوت">×</button></div>
+    <label for="voice-line">العبارة التي تريد تسجيلها</label>
+    <select id="voice-line"><option value="question">السؤال الحالي</option><option value="feedback">الشرح أو التلميح الظاهر</option></select>
+    <p id="voice-script"></p>
+    <div class="work-actions">
+      <button id="voice-record" type="button">ابدأ التسجيل</button>
+      <button id="voice-stop" type="button" class="quiet" disabled>أوقف التسجيل</button>
+      <button id="voice-test" type="button" class="quiet" disabled>جرّب التسجيل</button>
+    </div>
+    <label for="voice-file">أو ارفع تسجيلًا لهذه العبارة</label>
+    <input id="voice-file" type="file" accept="audio/*">
+    <label><input id="voice-fallback" type="checkbox"> اسمح بالصوت الاصطناعي الاحتياطي إذا لم يتوفر تسجيل أو صوت جهاز عربي</label>
+    <p id="voice-panel-status" role="status"></p>
   </dialog>
   <noscript>يلزم تفعيل JavaScript لفتح الدرس التفاعلي.</noscript>
 </main>

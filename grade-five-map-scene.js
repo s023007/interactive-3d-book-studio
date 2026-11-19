@@ -83,3 +83,74 @@ export function createPaperMap(scene){
   map.add(path);
   return {map,doors,positions};
 }
+
+export function createAtlasTerrain(scene){
+  const world=new THREE.Group();
+  world.visible=false;
+  world.scale.z=1.48;
+  scene.add(world);
+  const inks=new Map();
+  const ink=color=>{
+    if(!inks.has(color))inks.set(color,new THREE.MeshStandardMaterial({color,roughness:.93}));
+    return inks.get(color);
+  };
+  const rock=ink(0xa58a7e), snow=ink(0xffe4c4), fir=ink(0x587d61), lightFir=ink(0x82a675);
+  const khaki=ink(0xc7c893), evergreen=ink(0xa8bd91), ochre=ink(0xd8ac81);
+  const peakGeometry=new THREE.ConeGeometry(1,1,5);
+  function mesh(geometry,material,x,y,z,sx=1,sy=1,sz=1){
+    const part=new THREE.Mesh(geometry,material);
+    part.position.set(x,y,z);part.scale.set(sx,sy,sz);
+    world.add(part);return part;
+  }
+  const patch=(shape,material,x,z,sx,sz)=>{
+    const object=mesh(shape,material,x,.035,z,sx,sz,1);
+    object.rotation.x=-Math.PI/2;
+    return object;
+  };
+  function polygon(){
+    const points=[[-1,-.2],[-.8,-.8],[-.32,-.94],[.37,-.86],[.93,-.61],[1,.12],[.71,.72],[.2,.92],[-.43,.76],[-.91,.48]];
+    return new THREE.Shape(points.map(([x,y])=>new THREE.Vector2(x,y)));
+  }
+  const field=new THREE.ExtrudeGeometry(polygon(),{depth:.035,bevelEnabled:false});
+  const patches=[
+    patch(field,evergreen,2.7,.91,2.22,1.55),
+    patch(field,khaki,-2.5,.60,2.23,1.84),
+    patch(field,ochre,2.3,-1.38,2.41,1.17),
+    patch(field,evergreen,-2.5,-1.48,2.02,1.15),
+  ];
+  const riverPoints=[[-.08,-2.83],[-.4,-2.17],[-.16,-1.43],[.62,-.83],[.51,-.24],[-.65,.59],[-.92,1.27],[-.42,2.17],[.03,2.83]];
+  const river=new THREE.CatmullRomCurve3(riverPoints.map(([x,z])=>new THREE.Vector3(x,.082,z)));
+  const river2=river.clone();
+  mesh(new THREE.TubeGeometry(river,40,.21,5,false),ink(0x508d95),0,.004,0,1,.48,1);
+  mesh(new THREE.TubeGeometry(river2,40,.072,4,false),ink(0x8cbdb3),.026,.045,0,1,.48,1);
+  for(const [x,z,h,r] of [[-4.18,-1.94,1.22,.72],[-3.21,-1.77,1.72,.83],[-2.46,-1.87,1.18,.60],[3.44,-1.88,1.57,.78],[4.22,-1.52,1.06,.62],[-3.75,-.85,.82,.56]]){
+    mesh(peakGeometry,rock,x,h*.51,z,r,h,r).rotation.y=.22;
+    mesh(peakGeometry,snow,x,h*.89,z,r*.36,h*.29,r*.36).rotation.y=.22;
+  }
+  const leaves=new THREE.ConeGeometry(.26,.50,5);
+  const trunk=new THREE.CylinderGeometry(.041,.059,.20,5);
+  const bark=ink(0x9e7758);
+  for(const [i,[x,z]] of [[2.18,.44],[2.63,.61],[3.1,.03],[3.51,.48],[4.2,.87],[4.38,1.38],[-2.9,.44],[-4.1,.70],[-4.43,1.11],[-3.74,1.32],[-3.38,1.02],[1.55,1.80],[2.02,2.09],[-2.17,1.9]].entries()){
+    const scale=.79+(i%4)*.13;
+    mesh(trunk,bark,x,.16,z,scale,scale,scale);
+    mesh(leaves,i%2?fir:lightFir,x,.41*scale,z,scale,scale,scale);
+    mesh(leaves,i%2?lightFir:fir,x,.57*scale,z,scale*.78,scale*.77,scale*.78);
+  }
+  const trail=ink(0xe6ca9a), track=new THREE.BoxGeometry(.21,.04,.083);
+  for(let i=0;i<22;i++){
+    const x=-3.84+i*.353;
+    mesh(track,trail,x,.12,1.04+.19*Math.cos(x*.82)).rotation.y=.15*Math.sin(x);
+  }
+  const bridge=ink(0xc38b62);
+  for(let i=0;i<6;i++)mesh(new THREE.BoxGeometry(.101,.065,.44),bridge,-.50+i*.12,.136,.90);
+  for(const [x,z] of [[2.76,-.55],[-2.05,-.16],[-2.62,1.78],[2.12,1.39]]){
+    mesh(new THREE.BoxGeometry(.62,.41,.52),ink(0xf0c187),x,.25,z);
+    mesh(new THREE.ConeGeometry(.56,.39,4),ink(0xb37964),x,.62,z).rotation.y=Math.PI/4;
+  }
+  function present(view,unit){
+    world.visible=true;
+    const colors=[0xb7b789,0xc5b18d,0xa6c1a1,0xc9b59d];
+    patches.forEach((item,index)=>{item.material=ink(view==="index"?[0xa8bd91,0xc7c893,0xd8ac81,0xa8bd91][index]:colors[(unit+index)%4]);});
+  }
+  return {world,present};
+}
