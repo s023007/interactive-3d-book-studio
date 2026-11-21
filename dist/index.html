@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ar-OM" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#102f30">
+  <meta name="description" content="مطبعة الأعداد في ورّاق. تجربة عربية لتعلّم القيمة المكانية للصف الخامس.">
+  <title>ورّاق | مطبعة الأعداد</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <header class="site-head">
+    <div class="site-head-inner shell">
+      <a class="brand" href="#home" aria-label="ورّاق، الرئيسية">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i></span><span>ورّاق</span>
+      </a>
+      <button id="open-index" type="button" class="outline-button" aria-haspopup="dialog">فهرس الكتاب <span aria-hidden="true">☰</span></button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section id="home" class="view hero" aria-labelledby="home-title">
+      <div class="hero-copy">
+        <p class="book-grade">رياضيات الصف الخامس</p>
+        <h1 id="home-title" tabindex="-1">لكلّ عددٍ<br><em>مكانه.</em></h1>
+        <p class="intro">افتح كتاب ورّاق وادخل مطبعة الأعداد. رتّب القوالب في خاناتها، واعرف كيف يتغيّر الرقم حين ينتقل من مكانه.</p>
+        <button class="primary-button start" type="button">ادخل مطبعة الأعداد</button>
+      </div>
+      <figure class="hero-art">
+        <img src="./assets/number-press.webp" alt="ورشة طباعة من الورق المقصوص تنبثق من كتاب مفتوح، وبجوارها راكون يحمل بطاقة."
+             width="1200" height="900" fetchpriority="high">
+      </figure>
+    </section>
+
+    <section id="press" class="view press" aria-labelledby="press-title" hidden>
+      <div class="press-top">
+        <div><p class="book-grade">القيمة المكانية</p><h1 id="press-title" tabindex="-1">مطبعة الأعداد</h1></div>
+        <div class="stage-tracker">
+          <span id="level-name"></span>
+          <div class="track" aria-hidden="true"><i></i><i></i><i></i></div>
+        </div>
+      </div>
+      <div class="note">
+        <span class="note-seal" aria-hidden="true">✦</span>
+        <div><strong>الطبّاعة</strong><p id="instruction"></p></div>
+      </div>
+
+      <div class="machine" id="machine">
+        <div class="machine-label"><span><i aria-hidden="true"></i> لوحة الطباعة</span><b id="target-number" dir="ltr"></b></div>
+        <div id="placing">
+          <div class="slots" id="slots" dir="ltr" aria-label="خانات القيمة المكانية"></div>
+          <div class="letters" id="tiles" dir="ltr" aria-label="قوالب الأرقام"></div>
+          <button id="clear" type="button" class="text-button" hidden>أعد ترتيب القوالب</button>
+        </div>
+        <div id="value-task" class="value-task" hidden>
+          <div id="value-options" class="value-options" dir="ltr" aria-label="اختر قيمة الرقم ٤"></div>
+        </div>
+        <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+      </div>
+      <div class="press-actions">
+        <button id="next" type="button" class="primary-button" hidden></button>
+      </div>
+    </section>
+
+    <section id="result" class="view result" aria-labelledby="result-title" hidden>
+      <div class="printed-card">
+        <span class="paper-seal" aria-hidden="true">✦</span>
+        <h1 id="result-title" tabindex="-1">طُبعت البطاقة!</h1>
+        <p>قيمة الرقم <b>٤</b> تتغيّر بتغيّر منزلته.</p>
+        <div class="proof">
+          <div><b dir="ltr">٦٤٬٠٨٢</b><span>٤ في الآلاف = ٤٬٠٠٠</span></div>
+          <div><b dir="ltr">٤٠٬٦٨٢</b><span>٤ في عشرات الآلاف = ٤٠٬٠٠٠</span></div>
+        </div>
+        <button id="replay" type="button" class="primary-button">أعد التجربة</button>
+      </div>
+    </section>
+
+    <footer class="site-foot"><span>ورّاق</span><span>معاينة الدرس الأول</span></footer>
+  </main>
+
+  <dialog id="book-index" aria-labelledby="index-title">
+    <div class="index-head">
+      <h2 id="index-title">فهرس الكتاب</h2>
+      <form method="dialog"><button class="close-button" type="submit" aria-label="إغلاق الفهرس">×</button></form>
+    </div>
+    <p>الفصل الأول · الأعداد والعمليات</p>
+    <button class="index-lesson start" type="button">
+      <span><strong>مطبعة الأعداد</strong><small>القيمة المكانية</small></span>
+      <span id="index-progress" aria-hidden="true">↗</span>
+    </button>
+  </dialog>
+</body>
+</html>
