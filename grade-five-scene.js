@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { makeRaccoon } from "./river-world.js";
 import { createPaperMap, createAtlasTerrain } from "./grade-five-map-scene.js";
 import { drawGeometryDiagram, positionSlidingPiece } from "./grade-five-geometry-scene.js";
+import { createWorkshopScene } from "./grade-five-workshop-scene.js";
 
 const side = 1.03;
 const palette = [0xcd81bd,0xe8a16f,0x84bfc0,0xf4c47c,0xa28eda,0xe29a9c];
@@ -64,6 +65,7 @@ export function createBookScene(canvas){
 
   const paperMap=createPaperMap(scene);
   const atlas=createAtlasTerrain(scene);
+  const workshop=createWorkshopScene(scene);
   const home=new THREE.Vector3(3.05,0,.97);
   const mapDepth=1.55;
   const mapHome=new THREE.Vector3(1.37,0,2.66*mapDepth);
@@ -71,10 +73,12 @@ export function createBookScene(canvas){
   const bookCamera=new THREE.Vector3(4.6,13.9,14);
   const mapCamera=new THREE.Vector3(.12,23,10.6);
   const atlasCamera=new THREE.Vector3(2.7,17,12.5);
+  const workshopCamera=new THREE.Vector3(1.85,17,13);
   const projection=new THREE.Vector3();
   let mapShowing=false, atlasShowing=false, doorLabels=[], atlasLabels=[], journey=null, stops=[];
   let pair=-1;
   function showMap(value,labels=[],theme){
+    workshop.room.visible=false;
     atlasShowing=false;
     atlas.world.visible=false;
     mapShowing=value;
@@ -284,7 +288,8 @@ export function createBookScene(canvas){
       }
       const cue=reduced?0:Math.max(0,1-(now-settle)/800);
       const cheer=reduced?0:Math.max(0,1-(now-celebrationStart)/960);
-      const viewpoint=atlasShowing?atlasCamera:mapShowing?mapCamera:bookCamera;
+      const workshopShowing=workshop.room.visible;
+      const viewpoint=atlasShowing?atlasCamera:mapShowing?mapCamera:workshopShowing?workshopCamera:bookCamera;
       camera.position.lerp(viewpoint,reduced?1:.17);
       const zoom=atlasShowing?Math.min(.93,(camera.top-camera.bottom)/8.5):1;
       if(camera.zoom!==zoom){camera.zoom=zoom;camera.updateProjectionMatrix();}
@@ -295,7 +300,7 @@ export function createBookScene(canvas){
       }else if(atlasShowing){
         alignAtlas();
       }else{
-        raccoon.body.position.x=3.05+(cue?Math.sin(cue*Math.PI)*.40:0);
+        raccoon.body.position.x=(workshopShowing?3.70:3.05)+(cue?Math.sin(cue*Math.PI)*.40:0);
         raccoon.body.position.y=Math.max(cue*.24,cheer*.74)*Math.sin(Math.max(cue,cheer)*Math.PI);
         raccoon.arms[1].rotation.x=-cheer*1.9;
         raccoon.shadow.position.set(raccoon.body.position.x,.012,raccoon.body.position.z);
@@ -303,12 +308,27 @@ export function createBookScene(canvas){
       raccoon.head.rotation.x=talking&&!reduced?Math.sin(t*10)*.08:0;
       mouth.scale.y=talking?(reduced?.037:.035+.028*Math.abs(Math.sin(t*12))):.014;
       raccoon.arms[0].rotation.x=-Math.max(cue*1.2,cheer*1.9)+(talking&&!reduced?-.27+Math.sin(t*5)*.18:0);
+      workshop.animate(now,reduced);
       renderer.render(scene,camera);
       if(!canvas.hasAttribute("data-rendered"))canvas.setAttribute("data-rendered","");
     }
   });
   return {
     setNet,setCuboid,setDiagram,showMap,showAtlas,visitDoor,inspectPair,
+    setWorkshop(faces){
+      if(!workshop.room.visible){
+        showMap(false);
+        group.visible=false;
+        raccoon.body.scale.setScalar(1.02);
+        raccoon.body.position.z=1.00;
+        workshop.room.visible=true;
+      }
+      workshop.setPlan(faces);
+    },
+    workshopChoose(){workshop.hidePuzzle();},
+    workshopTurn:workshop.turn,workshopMark:workshop.mark,
+    workshopCue:workshop.say,workshopSpeak:workshop.speak,
+    workshopPick(x,y){return workshop.pick(x,y,canvas,camera);},
     celebrate(){celebrationStart=performance.now();},
     foldPart(amount){desired=amount;settle=performance.now();},
     fold(next){desired=next?1:0;settle=performance.now();foldStart=next?.8:0;},

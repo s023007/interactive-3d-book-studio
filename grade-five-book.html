@@ -30,6 +30,13 @@
       <div class="prompt" id="map-prompt" hidden><span id="map-count"></span><p id="map-title"></p></div>
       <nav id="door-map" aria-label="أبواب خريطة الدرس" hidden></nav>
       <div class="prompt" id="lesson-prompt" hidden><span id="sheet-title"></span><p id="question"></p></div>
+      <div id="workshop-caption" class="workshop-caption" hidden>
+        <span id="workshop-speaker"></span>
+        <p id="workshop-line" aria-live="polite"></p>
+      </div>
+      <div id="workshop-fallback" class="workshop-fallback" hidden>
+        <p>الرسم المسطّح للورشة</p><div id="workshop-flat" aria-hidden="true"></div>
+      </div>
       <div id="fallback" hidden><span>العرض الثلاثي الأبعاد غير متاح.</span><div id="fallback-figure"></div></div>
       <p id="diagram-description" class="sr-only" hidden></p>
       <div class="scene-tools" id="scene-tools" hidden><button id="fold" type="button" class="quiet">اطوِ الشبكة</button><button id="fold-step" type="button" class="quiet">اطوِ خطوة</button><button id="read" type="button" class="quiet">اسمع السؤال</button></div>
@@ -41,7 +48,27 @@
     <section id="map-summary" class="work" aria-labelledby="map-task" hidden>
       <h2 id="map-task"></h2>
       <p id="map-status" class="feedback" role="status">المس المحطة التي تريدها. يمشي الراكون إليها ويفتح السؤال.</p>
+      <button id="open-workshop" type="button" hidden>ادخل ورشة الصناديق</button>
       <button id="map-stamp" type="button" class="quiet" hidden>شاهد ختمك ✦</button>
+    </section>
+    <section id="workshop" aria-label="أدوات ورشة الصناديق" hidden>
+      <div id="workshop-progress" class="workshop-progress">
+        <h2 id="workshop-stage-title"></h2>
+        <output id="workshop-count" aria-live="polite"></output>
+      </div>
+      <div id="workshop-nets" class="workshop-nets" aria-label="الشبكات المتاحة" role="group" hidden></div>
+      <div id="workshop-faces" class="workshop-faces" aria-label="طيّ الأوجه أو فتحها" role="group"></div>
+      <p id="workshop-support" class="workshop-support" role="status"></p>
+      <p id="workshop-stamp" class="stamp" hidden>✦ ختم صانع المكعّبات</p>
+      <div class="workshop-actions">
+        <button id="workshop-next" type="button" hidden></button>
+        <button id="workshop-hint" type="button" class="quiet">تلميح</button>
+        <button id="workshop-listen" type="button" class="quiet">اسمع العبارة</button>
+        <button id="workshop-stop" type="button" class="quiet" hidden>أوقف الصوت</button>
+        <button id="workshop-voice" type="button" class="quiet">تسجيل الحوار</button>
+        <button id="workshop-back" type="button" class="quiet">خريطة الدرس</button>
+      </div>
+      <p id="workshop-audio" class="workshop-support" role="status" hidden></p>
     </section>
     <section id="lesson-work" class="work" aria-labelledby="task" hidden>
       <h2 id="task"></h2>

@@ -57,7 +57,7 @@ export function createVoicePanel({getLines,play,stop}){
     }catch{}
     if(panel.open&&selectedText===text){
       $("voice-test").disabled=false;
-      note.textContent=saved?"حُفظ التسجيل في هذا المتصفح، ويستخدمه الراكون عند قراءة هذه العبارة.":
+      note.textContent=saved?"حُفظ التسجيل في هذا المتصفح، ويُشغَّل عند قراءة هذه العبارة.":
         "التسجيل جاهز في الصفحة الحالية. تعذّر حفظه بعد إغلاقها.";
     }
   }
@@ -130,10 +130,14 @@ export function createVoicePanel({getLines,play,stop}){
     stop();
     if(recorder?.state==="recording")recorder.stop();
   });
-  $("voice-setup").onclick=()=>{
+  function open(recordingsOnly=false){
+    $("voice-title").textContent=recordingsOnly?"تسجيل حوار الورشة":"صوت الراكون";
+    select.options[0].textContent=recordingsOnly?"العبارة الحالية":"السؤال الحالي";
+    fallback.parentElement.hidden=recordingsOnly;
     select.value="question";
     panel.showModal();
     choose();
-  };
-  return {getClip,allowFallback:()=>fallback.checked};
+  }
+  $("voice-setup").onclick=()=>open();
+  return {getClip,open,allowFallback:()=>fallback.checked};
 }

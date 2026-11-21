@@ -13,6 +13,78 @@ async function openGeometry(page){
   await cards.getByRole('button',{name:/المكعب ومتوازي المستطيلات/}).click();
 }
 
+for(const viewport of [{width:360,height:800},{width:390,height:844},{width:768,height:1024},{width:1440,height:900}]){
+  test.describe('workshop '+viewport.width,()=>{
+    const touch=viewport.width<500;
+    test.use({viewport,hasTouch:touch,isMobile:touch,reducedMotion:'reduce'});
+    test('spots overlapping faces, repairs the net and earns the workshop stamp',async({page},info)=>{
+      test.setTimeout(110000);
+      const faults=[];
+      page.on('pageerror',error=>faults.push(error.message));
+      await page.goto('/grade-five-book.html');
+      await openGeometry(page);
+      await expect(page.locator('#paper-scene')).toHaveAttribute('data-rendered','');
+      const use=locator=>touch?locator.tap():locator.click();
+      const action=selector=>use(page.locator(selector));
+      await action('#open-workshop');
+      await expect(page.locator('#workshop-speaker')).toHaveText('صانعة الصناديق');
+      await expect(page.locator('#workshop-fallback')).toBeHidden();
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(viewport.width);
+      await page.screenshot({path:info.outputPath('workshop-opening.png')});
+      const faces=page.locator('#workshop-faces button');
+      const fold=async()=>{for(const button of await faces.all())await use(button);};
+      await action('#workshop-listen');
+      await expect(page.locator('#workshop-audio')).toContainText('التسجيل البشري');
+      await fold();
+      await expect(page.locator('#workshop')).toHaveAttribute('data-phase','overlap');
+      await expect(page.locator('#workshop-faces [data-conflict]')).toHaveCount(2);
+      await expect(page.locator('#workshop-speaker')).toHaveText('الراكون');
+      await page.screenshot({path:info.outputPath('workshop-overlap.png')});
+      await use(page.locator('#workshop-faces [data-conflict]').last());
+      await expect(page.locator('#workshop-faces [data-conflict]')).toHaveCount(0);
+      await action('#workshop-next');
+      await fold();
+      await expect(page.locator('#workshop-line')).toContainText('صندوقٌ مغلق');
+      await action('#workshop-next');
+      await use(page.getByRole('button',{name:/^الشبكة أ/}));
+      await fold();
+      await expect(page.locator('#workshop')).toHaveAttribute('data-phase','overlap');
+      await expect(page.locator('#workshop-stamp')).toBeHidden();
+      await use(page.getByRole('button',{name:/^الشبكة ب/}));
+      await fold();
+      await expect(page.locator('#workshop-stamp')).toBeVisible();
+      await page.screenshot({path:info.outputPath('workshop-reward.png')});
+      await action('#workshop-next');
+      await expect(page.locator('#open-workshop')).toContainText('الختم محفوظ');
+      await page.reload();
+      await openGeometry(page);
+      await expect(page.locator('#open-workshop')).toContainText('الختم محفوظ');
+      expect(faults).toEqual([]);
+    });
+  });
+}
+
+test('uses workshop controls and local voice settings with WebGL unavailable',async({page})=>{
+  await page.route('https://cdn.jsdelivr.net/npm/three@0.174.0/build/**',route=>route.abort());
+  await page.goto('/grade-five-book.html');
+  await openGeometry(page);
+  await page.locator('#open-workshop').click();
+  await expect(page.locator('#workshop-fallback')).toBeVisible();
+  await page.locator('#workshop-voice').click();
+  await expect(page.locator('#voice-script')).toHaveText(/وصلت قطعة جديدة/);
+  await expect(page.locator('#voice-fallback')).toBeHidden();
+  await page.locator('#voice-file').setInputFiles('assets/grade-five-audio/01.mp3');
+  await expect(page.locator('#voice-panel-status')).toContainText('حُفظ التسجيل');
+  await page.locator('#voice-close').click();
+  await page.locator('#workshop-listen').click();
+  await expect(page.locator('#workshop-audio')).toContainText('يعمل التسجيل المحفوظ');
+  for(const button of await page.locator('#workshop-faces button').all()){
+    await button.focus();
+    await page.keyboard.press('Enter');
+  }
+  await expect(page.locator('#workshop-flat [data-conflict]')).toHaveCount(2);
+});
+
 const newLessons=[
   {width:360,height:800,name:'الخطوط المتوازية والمتعامدة',map:'معابر الخطوط',title:'عارضتان في المسار',
    tool:'ضع زاوية القياس',observation:'المسافة',answers:[0,1,1],stamp:'مستكشف الخطوط'},

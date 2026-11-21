@@ -4,6 +4,8 @@ import { solids } from "./grade-five-solids.js";
 import { geometryLessons, renderDiagram } from "./grade-five-geometry.js";
 import { buildDiagram } from "./grade-five-diagrams.js";
 import { createVoicePanel } from "./grade-five-voice.js";
+import { createWorkshop } from "./grade-five-workshop.js";
+import { workshopLines, workshopRecordings } from "./grade-five-workshop-data.js";
 
 const $=id=>document.getElementById(id);
 const digits=new Intl.NumberFormat("ar-OM",{numberingSystem:"arab"});
@@ -18,6 +20,7 @@ let pageList, rewardPage;
 let awarded=false;
 let labState;
 let speaking=false;
+let playingSpeaker="";
 let inMap=true;
 let entering=false;
 const map=$("door-map");
@@ -75,11 +78,14 @@ function speechStop(){
   if(objectURL){URL.revokeObjectURL(objectURL);objectURL=null;}
   window.speechSynthesis?.cancel();
   speaking=false;
+  playingSpeaker="";
   scene?.speak(false);
+  scene?.workshopSpeak("");
 }
 function voiceStatus(value){
-  $("audio-status").textContent=value;
-  $("audio-status").hidden=!value;
+  const status=$(atlasMode==="workshop"?"workshop-audio":"audio-status");
+  status.textContent=value;
+  status.hidden=!value;
   if($("voice-panel").open)$("voice-panel-status").textContent=value;
 }
 function teachingFeedback(text){
@@ -90,7 +96,8 @@ function teachingFeedback(text){
 }
 function speakingNow(value){
   speaking=value;
-  scene?.speak(value);
+  scene?.speak(value&&playingSpeaker!=="artisan");
+  scene?.workshopSpeak(value?playingSpeaker:"");
 }
 function deviceNarration(text,request,onUnavailable){
   const synth=window.speechSynthesis;
@@ -103,13 +110,21 @@ function deviceNarration(text,request,onUnavailable){
   line.onerror=()=>{if(request===voiceRequest){speakingNow(false);onUnavailable();}};
   synth.speak(line);
 }
-async function narrate(text){
+async function narrate(text,quietUnavailable=false){
   if(!text)return;
   speechStop();
+  const workshopMode=atlasMode==="workshop";
+  const line=workshopMode?workshop.lineFor(text):null;
+  playingSpeaker=workshopLines[line]?.speaker??"";
   const request=voiceRequest;
   const localClip=await voices.getClip(text);
   if(request!==voiceRequest)return;
-  const rejected=()=>voiceStatus("لا يوجد تسجيل قابل للتشغيل. افتح «صوت الراكون» للتسجيل أو رفع ملف. النص معروض على الصفحة.");
+  const rejected=()=>{
+    if(quietUnavailable)return;
+    voiceStatus(workshopMode?
+      "التسجيل البشري لهذه العبارة غير متاح بعد. يمكنك سماع تسجيل تحفظه من «تسجيل الحوار».":
+      "لا يوجد تسجيل قابل للتشغيل. افتح «صوت الراكون» للتسجيل أو رفع ملف. النص معروض على الصفحة.");
+  };
   const file=narration.get(text);
   const reserve=()=>{
     if(request!==voiceRequest)return;
@@ -147,12 +162,25 @@ async function narrate(text){
   if(localClip instanceof Blob){
     objectURL=URL.createObjectURL(localClip);
     playClip(objectURL,"يعمل التسجيل المحفوظ على جهازك.",rejected);
+  }else if(workshopMode){
+    const clip=workshopRecordings[line];
+    if(clip)playClip(new URL(clip,import.meta.url),"يعمل التسجيل الصوتي الآن.",rejected);
+    else rejected();
   }else deviceNarration(text,request,reserve);
 }
 const voices=createVoicePanel({
-  getLines:()=>({question:$("question").textContent,feedback:activeExplanation()}),
+  getLines:()=>atlasMode==="workshop"?{question:workshop.currentLine()}:
+    {question:$("question").textContent,feedback:activeExplanation()},
   play:narrate,
   stop:speechStop,
+});
+const workshop=createWorkshop({
+  scene:()=>scene,
+  enter:startWorkshop,
+  exit:()=>showMap(true),
+  narrate,
+  stop:speechStop,
+  openVoice:voices.open,
 });
 function activeExplanation(){
   const note=$("concept-note");
@@ -306,7 +334,7 @@ function breadcrumbs(view){
   const entries=[["trail-index","atlas"],["trail-unit","unit"],["trail-lesson","map"]];
   for(const [id,target] of entries){
     const button=$(id);
-    if(view===target||target==="map"&&view==="lesson"||target==="map"&&view==="outline")button.setAttribute("aria-current","step");
+    if(view===target||target==="map"&&["lesson","outline","workshop"].includes(view))button.setAttribute("aria-current","step");
     else button.removeAttribute("aria-current");
     button.disabled=target==="unit"?unitIndex===null:target==="map"?!outlineLesson||!lessons[outlineLesson.id]:false;
   }
@@ -344,6 +372,7 @@ function showAtlasScene(){
 }
 function showAtlas(view="atlas",focus=true){
   speechStop();
+  workshop.leave();
   atlasMode=view;
   inMap=false;
   entering=false;
@@ -396,6 +425,7 @@ function showAtlas(view="atlas",focus=true){
   }
 }
 function displayMode(showMap){
+  workshop.leave();
   atlasMode=showMap?"map":"lesson";
   atlasPins.hidden=true;
   atlasCards.hidden=$("atlas-summary").hidden=true;
@@ -412,6 +442,17 @@ function displayMode(showMap){
   for(const id of ["lesson-tabs","lesson-prompt","scene-tools","lesson-work","lesson-footer","page-number"])$(id).hidden=showMap;
   $("diagram-description").hidden=true;
   $("fallback").hidden=showMap||!rendererFailed;
+}
+function startWorkshop(){
+  displayMode(false);
+  atlasMode="workshop";
+  document.querySelector(".book").dataset.view="workshop";
+  $("book-title").textContent="ورشة الصناديق";
+  $("book-series").textContent="الهندسة · المكعب";
+  for(const id of ["index","lesson-tabs","lesson-prompt","scene-tools","lesson-work","lesson-footer","page-number","fallback"])$(id).hidden=true;
+  breadcrumbs("workshop");
+  $("book-title").tabIndex=-1;
+  $("book-title").focus({preventScroll:true});
 }
 function go(next){
   if(next<0||next>=pageList.length||next===rewardPage&&!awarded)return;
@@ -482,6 +523,8 @@ function showMap(focus=false){
   $("map-task").textContent=lessonData.mapTask;
   $("map-count").textContent=digits.format(lessonData.doors.length)+" أسئلة · "+digits.format(solved.size)+" مكتملة";
   $("map-status").textContent=awarded?"ختم "+lessonData.stamp+" في فهرسك. اختر بابًا للمراجعة.":lessonData.mapTip;
+  $("open-workshop").hidden=lessonData!==solids;
+  $("open-workshop").textContent=workshop.earned()?"ورشة الصناديق · الختم محفوظ":"ادخل ورشة الصناديق";
   scene?.showMap(true,doorButtons,lessonData.theme);
   stamp();
   if(focus)doorButtons[0].focus({preventScroll:true});
@@ -493,6 +536,12 @@ $("trail-lesson").onclick=()=>{if(outlineLesson&&lessons[outlineLesson.id])showM
 $("back").onclick=()=>go(index-1);
 $("show-map").onclick=()=>showMap(true);
 $("map-stamp").onclick=()=>$("table").showModal();
+$("open-workshop").onclick=workshop.open;
+$("workshop-stop").onclick=()=>{
+  workshop.pauseNarration();
+  speechStop();
+  voiceStatus("");
+};
 $("next").onclick=()=>go(index+1);
 $("fold").onclick=()=>{
   foldStep=0;
@@ -588,8 +637,10 @@ showAtlas("atlas",false);
 import("./grade-five-scene.js").then(module=>{
   scene=module.createBookScene($("paper-scene"));
   $("fold").disabled=$("fold-step").disabled=false;
-  scene.speak(speaking);
+  scene.speak(speaking&&playingSpeaker!=="artisan");
+  if(atlasMode==="workshop")scene.workshopSpeak(speaking?playingSpeaker:"");
   if(inMap)showMap();
+  else if(atlasMode==="workshop")workshop.refresh();
   else if(atlasMode==="lesson")model();
   else showAtlasScene();
 }).catch(()=>{
