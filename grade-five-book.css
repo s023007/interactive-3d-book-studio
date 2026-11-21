@@ -179,3 +179,20 @@ nav ol{grid-template-columns:repeat(var(--page-columns,7),minmax(0,1fr))}
   #workshop{padding-inline:10px}
   .workshop-caption p{font-size:.80rem}
 }
+
+#open-cube-skill{margin-block-start:6px;border-color:#a2ad96}
+#cube-skill-dialog{padding:clamp(14px,4vw,22px);color:#2f423a}
+#cube-skill-dialog .modal-head{gap:10px}
+#cube-skill-heading{font-size:clamp(1.05rem,4.6vw,1.25rem);line-height:1.35}
+#cube-skill-dialog form button{min-width:44px}
+.cube-skill-status{
+  width:fit-content;margin:12px 0 8px;padding:6px 10px;
+  border:1px solid #a3b39c;border-radius:8px;background:#e7edda;color:#244735;font-weight:bold;
+}
+.cube-skill-detail{font-size:.91rem;line-height:1.55}
+.cube-skill-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:14px 0}
+.cube-skill-metrics div{display:grid;align-content:space-between;gap:6px;padding:7px 6px;border-radius:8px;background:#ede4d2}
+.cube-skill-metrics dt{font-size:.77rem;line-height:1.45;color:#4c412f}
+.cube-skill-metrics dd{margin:0;font-size:1rem;font-weight:bold;color:#23463d}
+#cube-skill-action{background:#355f51;border-color:#355648}
+.cube-skill-local{font-size:.77rem;color:#4d594d;margin:12px 0 0}

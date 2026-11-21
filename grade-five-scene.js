@@ -313,19 +313,18 @@ export function createBookScene(canvas){
       if(!canvas.hasAttribute("data-rendered"))canvas.setAttribute("data-rendered","");
     }
   });
+  function showWorkshop(){
+    if(workshop.room.visible)return;
+    showMap(false);
+    group.visible=false;
+    raccoon.body.scale.setScalar(1.02);
+    raccoon.body.position.z=1.00;
+    workshop.room.visible=true;
+  }
   return {
     setNet,setCuboid,setDiagram,showMap,showAtlas,visitDoor,inspectPair,
-    setWorkshop(faces){
-      if(!workshop.room.visible){
-        showMap(false);
-        group.visible=false;
-        raccoon.body.scale.setScalar(1.02);
-        raccoon.body.position.z=1.00;
-        workshop.room.visible=true;
-      }
-      workshop.setPlan(faces);
-    },
-    workshopChoose(){workshop.hidePuzzle();},
+    setWorkshop(faces){showWorkshop();workshop.setPlan(faces);},
+    workshopChoose(){showWorkshop();workshop.hidePuzzle();},
     workshopTurn:workshop.turn,workshopMark:workshop.mark,
     workshopCue:workshop.say,workshopSpeak:workshop.speak,
     workshopPick(x,y){return workshop.pick(x,y,canvas,camera);},

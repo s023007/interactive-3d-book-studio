@@ -178,7 +178,7 @@ export function createWorkshopScene(scene){
   }
   return {
     room,setPlan,mark,
-    hidePuzzle(){puzzleHidden=true;net.visible=false;},
+    hidePuzzle(){puzzleHidden=true;won=false;reward.visible=net.visible=false;},
     turn(id,progress){targets[id]=progress;},
     say(speaker){cueSpeaker=speaker;cueAt=performance.now();},
     speak(speaker){litSpeaker=speaker;},

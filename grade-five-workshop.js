@@ -1,4 +1,4 @@
-import {challengeNets,inspectFolds,panelColors,practiceNets,workshopLines} from "./grade-five-workshop-data.js";
+import {challengeNets,inspectFolds,panelColors,practiceNets,reviewNets,workshopLines} from "./grade-five-workshop-data.js";
 
 const stampKey="warraq.grade-five.workshop.stamp.v1";
 const digits=new Intl.NumberFormat("ar-OM",{numberingSystem:"arab"});
@@ -6,12 +6,14 @@ const names={artisan:"صانعة الصناديق",raccoon:"الراكون"};
 const titles=["جرّب الطيّ","أصلح الصندوق","اصنع صندوقًا جديدًا"];
 const $=id=>document.getElementById(id);
 
-export function createWorkshop({scene,enter,exit,narrate,stop,openVoice}){
+export function createWorkshop({scene,enter,exit,narrate,stop,openVoice,report}){
   const canvas=$("paper-scene"), targets=$("workshop-faces");
   const netChoices=$("workshop-nets");
   const next=$("workshop-next");
   let active=false, round=0, design=null, plan=null, closed=new Set(), conflicts=new Set();
   let gesture=null, complete=false, repairReady=false, cue="arrive", buttons=[], autoVoice=false, savedStamp=false;
+  let form="workshop", helped=false;
+  const attempted=new Set();
 
   function earned(){
     try{return localStorage.getItem(stampKey)==="earned";}catch{return false;}
@@ -63,6 +65,7 @@ export function createWorkshop({scene,enter,exit,narrate,stop,openVoice}){
       button.toggleAttribute("data-conflict",conflicts.has(id));
     }
     $("workshop-stamp").hidden=!complete;
+    $("workshop-skill").hidden=!complete;
     $("workshop-hint").hidden=complete||!plan;
     $("workshop-back").hidden=complete;
     next.hidden=!repairReady&&!complete;
@@ -83,14 +86,17 @@ export function createWorkshop({scene,enter,exit,narrate,stop,openVoice}){
     paint();
   }
   function chooseButtons(){
-    netChoices.replaceChildren(...challengeNets.map((net,i)=>{
+    const options=form==="review"?reviewNets:challengeNets;
+    const descriptions=form==="review"?
+      ["أربعة مربعات في صف ومربع عند كل طرف على جهتين مختلفتين", "أربعة مربعات في صف ومربعان فوقه"] :
+      ["أربعة مربعات في صف ومربعان منفصلان أسفله","صفّان منزاحان، ثلاثة مربعات في كل صف"];
+    netChoices.replaceChildren(...options.map((net,i)=>{
       const button=document.createElement("button");
       button.type="button";
       button.className="quiet workshop-choice";
       button.setAttribute("aria-pressed",String(design===i));
       const label=i===0?"الشبكة أ":"الشبكة ب";
-      const description=i===0?"أربعة مربعات في صف ومربعان منفصلان أسفله":"صفّان منزاحان، ثلاثة مربعات في كل صف";
-      button.setAttribute("aria-label",label+"، "+description);
+      button.setAttribute("aria-label",label+"، "+descriptions[i]);
       const title=document.createElement("b");
       title.textContent=label;
       const thumb=netThumbnail(net,false);
@@ -133,6 +139,13 @@ export function createWorkshop({scene,enter,exit,narrate,stop,openVoice}){
     conflicts=result.conflicts;
     if(conflicts.size&&!priorConflict){
       if(round===0)repairReady=true;
+      if(round===2){
+        helped=true;
+        if(!attempted.has(design)){
+          attempted.add(design);
+          report("overlap",form);
+        }
+      }
       say(round===2?"retry":"overlap");
     }else if(priorConflict&&!conflicts.size){
       say("move");
@@ -140,6 +153,7 @@ export function createWorkshop({scene,enter,exit,narrate,stop,openVoice}){
     if(result.fitted){
       if(round===2){
         complete=true;
+        report(helped?"guided":"independent",form);
         try{localStorage.setItem(stampKey,"earned");savedStamp=true;}catch{}
         say("finish");
         scene()?.celebrate();
@@ -159,12 +173,20 @@ export function createWorkshop({scene,enter,exit,narrate,stop,openVoice}){
     active=false;gesture=null;
     for(const id of ["workshop","workshop-caption","workshop-fallback"])$(id).hidden=true;
   }
-  function open(){
+  function begin(check){
     enter();
-    active=true;round=0;design=null;complete=false;repairReady=false;savedStamp=false;
+    active=true;round=check?2:0;design=null;complete=false;repairReady=false;savedStamp=false;
+    form=check??"workshop";helped=false;attempted.clear();
     $("workshop").hidden=$("workshop-caption").hidden=false;
-    setPlan(practiceNets[0]);
-    say("arrive");
+    if(check){
+      setPlan(null);
+      chooseButtons();
+      say("choose");
+      netChoices.firstElementChild.focus({preventScroll:true});
+    }else{
+      setPlan(practiceNets[0]);
+      say("arrive");
+    }
   }
 
   next.onclick=()=>{
@@ -183,7 +205,10 @@ export function createWorkshop({scene,enter,exit,narrate,stop,openVoice}){
       netChoices.firstElementChild.focus({preventScroll:true});
     }
   };
-  $("workshop-hint").onclick=()=>say(conflicts.size?(round===2?"retry":"overlap"):"move");
+  $("workshop-hint").onclick=()=>{
+    if(round===2)helped=true;
+    say(conflicts.size?(round===2?"retry":"overlap"):"move");
+  };
   $("workshop-listen").onclick=()=>{
     autoVoice=true;
     $("workshop-stop").hidden=false;
@@ -219,7 +244,7 @@ export function createWorkshop({scene,enter,exit,narrate,stop,openVoice}){
   canvas.addEventListener("pointercancel",cancel);
   canvas.addEventListener("lostpointercapture",cancel);
   return {
-    open,leave,refresh,earned,lineFor,currentLine:()=>workshopLines[cue].text,
+    open:()=>begin(null),review:begin,leave,refresh,earned,lineFor,currentLine:()=>workshopLines[cue].text,
     pauseNarration(){autoVoice=false;$("workshop-stop").hidden=true;},
   };
 }

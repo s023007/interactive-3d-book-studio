@@ -49,6 +49,10 @@ export const challengeNets=[
   planFolds([[0,0],[1,0],[2,0],[3,0],[0,1],[2,1]]),
   planFolds([[0,0],[1,0],[2,0],[0,1],[-1,1],[-2,1]]),
 ];
+export const reviewNets=[
+  planFolds([[0,0],[-1,0],[1,0],[2,0],[-1,-1],[2,1]]),
+  planFolds([[0,0],[-1,0],[1,0],[2,0],[0,-1],[2,-1]]),
+];
 
 export const panelColors=["#d9a569","#44958c","#e68c83","#8d7fb6","#dda94c","#59a0b4"];
 const line=(speaker,text)=>({speaker,text});

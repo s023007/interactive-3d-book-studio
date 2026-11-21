@@ -85,6 +85,75 @@ test('uses workshop controls and local voice settings with WebGL unavailable',as
   await expect(page.locator('#workshop-flat [data-conflict]')).toHaveCount(2);
 });
 
+test('skill evidence separates coached work from two independent challenges',async({page},info)=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.goto('/grade-five-book.html');
+  await openGeometry(page);
+  const press=selector=>page.locator(selector).click();
+  const close=()=>page.getByRole('button',{name:'إغلاق بطاقة المهارة'}).click();
+  const fold=async()=>{
+    for(const button of await page.locator('#workshop-faces button').all())await button.click();
+  };
+  const practise=async()=>{
+    await fold();
+    await press('#workshop-next');
+    await fold();
+    await press('#workshop-next');
+  };
+  const choose=letter=>page.getByRole('button',{name:new RegExp('^الشبكة '+letter)}).click();
+  await press('#open-cube-skill');
+  await expect(page.locator('#cube-skill-state')).toHaveText('بانتظار أول تحدٍّ');
+  await press('#cube-skill-action');
+  await practise();
+  await choose('أ');
+  await fold();
+  await choose('ب');
+  await fold();
+  await press('#workshop-skill');
+  await expect(page.locator('#cube-skill-attempts')).toHaveText('٢');
+  await expect(page.locator('#cube-skill-overlaps')).toHaveText('١');
+  await expect(page.locator('#cube-skill-independent')).toHaveText('٠ من ٢');
+  await expect(page.locator('#cube-skill-latest')).toContainText('إعادة المحاولة');
+  await page.screenshot({path:info.outputPath('skill-guided.png')});
+  await press('#cube-skill-action');
+  await practise();
+  await choose('ب');
+  await fold();
+  await press('#workshop-skill');
+  await expect(page.locator('#cube-skill-state')).toHaveText('نجح بمفرده في تحدٍّ واحد');
+  await expect(page.locator('#cube-skill-action')).toHaveText('جرّب شبكة جديدة');
+  await press('#cube-skill-action');
+  await expect(page.locator('#workshop-faces')).toBeHidden();
+  await choose('أ');
+  await fold();
+  await press('#workshop-skill');
+  await expect(page.locator('#cube-skill-state')).toHaveText('أتقن المهارة في تحدّيَين');
+  await expect(page.locator('#cube-skill-independent')).toHaveText('٢ من ٢');
+  await page.screenshot({path:info.outputPath('skill-mastered.png')});
+  await close();
+  await page.reload();
+  await openGeometry(page);
+  await press('#open-cube-skill');
+  await expect(page.locator('#cube-skill-independent')).toHaveText('٢ من ٢');
+});
+
+test('skill card preserves old stamps and supports the smaller and larger layouts',async({page},info)=>{
+  await page.route('https://cdn.jsdelivr.net/npm/three@0.174.0/build/**',route=>route.abort());
+  await page.addInitScript(()=>localStorage.setItem('warraq.grade-five.workshop.stamp.v1','earned'));
+  await page.goto('/grade-five-book.html');
+  await openGeometry(page);
+  await page.locator('#open-cube-skill').click();
+  await expect(page.locator('#cube-skill-latest')).toContainText('ختم سابق');
+  await expect(page.locator('#cube-skill-independent')).toHaveText('٠ من ٢');
+  for(const viewport of [{width:360,height:800},{width:768,height:1024},{width:1440,height:900}]){
+    await page.setViewportSize(viewport);
+    await expect(page.locator('#cube-skill-action')).toBeInViewport({ratio:1});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(viewport.width);
+    await page.screenshot({path:info.outputPath('skill-'+viewport.width+'.png')});
+  }
+});
+
 const newLessons=[
   {width:360,height:800,name:'الخطوط المتوازية والمتعامدة',map:'معابر الخطوط',title:'عارضتان في المسار',
    tool:'ضع زاوية القياس',observation:'المسافة',answers:[0,1,1],stamp:'مستكشف الخطوط'},

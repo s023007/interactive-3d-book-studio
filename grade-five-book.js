@@ -6,6 +6,7 @@ import { buildDiagram } from "./grade-five-diagrams.js";
 import { createVoicePanel } from "./grade-five-voice.js";
 import { createWorkshop } from "./grade-five-workshop.js";
 import { workshopLines, workshopRecordings } from "./grade-five-workshop-data.js";
+import { createCubeMastery } from "./grade-five-mastery.js";
 
 const $=id=>document.getElementById(id);
 const digits=new Intl.NumberFormat("ar-OM",{numberingSystem:"arab"});
@@ -174,6 +175,11 @@ const voices=createVoicePanel({
   play:narrate,
   stop:speechStop,
 });
+const cubeMastery=createCubeMastery({
+  start:()=>workshop.open(),
+  review:form=>workshop.review(form),
+  earned:()=>workshop.earned(),
+});
 const workshop=createWorkshop({
   scene:()=>scene,
   enter:startWorkshop,
@@ -181,6 +187,7 @@ const workshop=createWorkshop({
   narrate,
   stop:speechStop,
   openVoice:voices.open,
+  report:cubeMastery.record,
 });
 function activeExplanation(){
   const note=$("concept-note");
@@ -524,6 +531,7 @@ function showMap(focus=false){
   $("map-count").textContent=digits.format(lessonData.doors.length)+" أسئلة · "+digits.format(solved.size)+" مكتملة";
   $("map-status").textContent=awarded?"ختم "+lessonData.stamp+" في فهرسك. اختر بابًا للمراجعة.":lessonData.mapTip;
   $("open-workshop").hidden=lessonData!==solids;
+  $("open-cube-skill").hidden=lessonData!==solids;
   $("open-workshop").textContent=workshop.earned()?"ورشة الصناديق · الختم محفوظ":"ادخل ورشة الصناديق";
   scene?.showMap(true,doorButtons,lessonData.theme);
   stamp();

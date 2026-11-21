@@ -49,6 +49,7 @@
       <h2 id="map-task"></h2>
       <p id="map-status" class="feedback" role="status">المس المحطة التي تريدها. يمشي الراكون إليها ويفتح السؤال.</p>
       <button id="open-workshop" type="button" hidden>ادخل ورشة الصناديق</button>
+      <button id="open-cube-skill" type="button" class="quiet" aria-haspopup="dialog" hidden>بطاقة المهارة</button>
       <button id="map-stamp" type="button" class="quiet" hidden>شاهد ختمك ✦</button>
     </section>
     <section id="workshop" aria-label="أدوات ورشة الصناديق" hidden>
@@ -62,6 +63,7 @@
       <p id="workshop-stamp" class="stamp" hidden>✦ ختم صانع المكعّبات</p>
       <div class="workshop-actions">
         <button id="workshop-next" type="button" hidden></button>
+        <button id="workshop-skill" type="button" class="quiet" aria-haspopup="dialog" hidden>شاهد تقدّمي</button>
         <button id="workshop-hint" type="button" class="quiet">تلميح</button>
         <button id="workshop-listen" type="button" class="quiet">اسمع العبارة</button>
         <button id="workshop-stop" type="button" class="quiet" hidden>أوقف الصوت</button>
@@ -91,6 +93,22 @@
       <button id="next" type="button">التالي ←</button>
     </footer>
   </div>
+  <dialog id="cube-skill-dialog" aria-labelledby="cube-skill-heading">
+    <div class="modal-head">
+      <h2 id="cube-skill-heading">بطاقة مهارة شبكة المكعب</h2>
+      <form method="dialog"><button type="submit" class="quiet" aria-label="إغلاق بطاقة المهارة">×</button></form>
+    </div>
+    <p id="cube-skill-state" class="cube-skill-status"></p>
+    <p id="cube-skill-latest" class="cube-skill-detail"></p>
+    <dl class="cube-skill-metrics">
+      <div><dt>محاولات التحقّق</dt><dd id="cube-skill-attempts"></dd></div>
+      <div><dt>محاولات ظهر فيها تداخل</dt><dd id="cube-skill-overlaps"></dd></div>
+      <div><dt>تحدّيات مختلفة حُلّت بمفرده</dt><dd id="cube-skill-independent"></dd></div>
+    </dl>
+    <p id="cube-skill-next" class="cube-skill-detail"></p>
+    <button id="cube-skill-action" type="button"></button>
+    <p id="cube-skill-local" class="cube-skill-local"></p>
+  </dialog>
   <dialog id="table">
     <div class="modal-head"><h2>فهرس ورّاق</h2><button id="close-index" type="button" class="quiet" aria-label="أغلق الفهرس">×</button></div>
     <p id="table-lesson"></p>
