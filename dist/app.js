@@ -51,7 +51,7 @@ function trySlot(index,digit=selected){
   select(null);
   byId("clear").hidden=false;
   if(filled.size===digitsOf(training.number).length){
-    message("اكتملت القوالب. وضعنا الصفر في المئات لأن العدد غير مكوّن من مئات.","correct");
+    message("اكتملت القوالب. وضعنا الصفر في خانة المئات ليبقى كل رقم في منزلته.","correct");
     next.textContent="جرّب بطاقة جديدة";
     next.hidden=false;
   }else message("وُضع "+number(digit)+" في خانة "+places[index]+".","correct");
